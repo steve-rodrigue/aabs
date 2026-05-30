@@ -107,3 +107,23 @@ services:
     depends_on:
       - milvus
       - embeddings
+
+  postgresql:
+    build:
+      context: ./databases/postgresql
+      dockerfile: Dockerfile
+
+    container_name: aabs-postgresql
+
+    environment:
+      POSTGRES_USER: aabs
+      POSTGRES_PASSWORD: aabs
+      POSTGRES_DB: aabs
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - ./data/postgresql:/var/lib/postgresql/data
+
+    restart: unless-stopped
