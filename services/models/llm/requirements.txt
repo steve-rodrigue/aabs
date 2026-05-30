@@ -1,0 +1,4 @@
+fastapi
+uvicorn[standard]
+llama-cpp-python
+huggingface_hub
