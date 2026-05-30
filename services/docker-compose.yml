@@ -149,3 +149,18 @@ services:
       - ./data/models:/models
 
     restart: unless-stopped
+
+  memgraph:
+    image: memgraph/memgraph:latest
+
+    container_name: aabs-memgraph
+
+    ports:
+      - "7687:7687"
+      - "7444:7444"
+      - "3000:3000"
+
+    volumes:
+      - ./data/memgraph:/var/lib/memgraph
+
+    restart: unless-stopped

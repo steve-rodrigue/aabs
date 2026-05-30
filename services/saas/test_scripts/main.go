@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"strings"
@@ -15,16 +16,19 @@ import (
 	_ "github.com/lib/pq"
 	client "github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
+	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
 const (
-	collectionName   = "comments"
-	milvusAddress    = "localhost:19530"
-	embeddingService = "http://localhost:8080/embed"
-	hdbscanService   = "http://localhost:8090/cluster"
-	llmService       = "http://localhost:8100/name-cluster"
-	postgresDSN      = "postgres://aabs:aabs@localhost:5432/aabs?sslmode=disable"
-	vectorDimension  = 1024
+	collectionName                = "comments"
+	milvusAddress                 = "localhost:19530"
+	embeddingService              = "http://localhost:8080/embed"
+	hdbscanService                = "http://localhost:8090/cluster"
+	llmService                    = "http://localhost:8100/name-cluster"
+	postgresDSN                   = "postgres://aabs:aabs@localhost:5432/aabs?sslmode=disable"
+	memgraphAddress               = "bolt://localhost:7687"
+	vectorDimension               = 1024
+	campaignRelationshipThreshold = 0.75
 )
 
 type EmbeddingRequest struct {
@@ -42,6 +46,12 @@ type StoredPost struct {
 	Embedding []float32
 }
 
+type CampaignNode struct {
+	ClusterID int
+	Name      string
+	Centroid  []float32
+}
+
 type HDBSCANRequest struct {
 	Embeddings     [][]float32 `json:"embeddings"`
 	MinClusterSize int         `json:"min_cluster_size"`
@@ -49,11 +59,11 @@ type HDBSCANRequest struct {
 }
 
 type HDBSCANResponse struct {
-	TotalEmbeddings int              `json:"total_embeddings"`
-	TotalClusters   int              `json:"total_clusters"`
-	NoiseCount      int              `json:"noise_count"`
-	Results         []HDBSCANCluster `json:"results"`
-	Centroids       [][]float32      `json:"centroids"`
+	TotalEmbeddings int                  `json:"total_embeddings"`
+	TotalClusters   int                  `json:"total_clusters"`
+	NoiseCount      int                  `json:"noise_count"`
+	Results         []HDBSCANCluster     `json:"results"`
+	Clusters        []HDBSCANClusterInfo `json:"clusters"`
 }
 
 type HDBSCANCluster struct {
@@ -61,6 +71,13 @@ type HDBSCANCluster struct {
 	ClusterID   int     `json:"cluster_id"`
 	Probability float64 `json:"probability"`
 	IsNoise     bool    `json:"is_noise"`
+}
+
+type HDBSCANClusterInfo struct {
+	ClusterID     int       `json:"cluster_id"`
+	Size          int       `json:"size"`
+	Centroid      []float32 `json:"centroid"`
+	MemberIndexes []int     `json:"member_indexes"`
 }
 
 type LLMNameRequest struct {
@@ -91,6 +108,15 @@ func main() {
 	}
 	defer milvus.Close()
 
+	graphDriver, err := neo4j.NewDriverWithContext(
+		memgraphAddress,
+		neo4j.NoAuth(),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer graphDriver.Close(ctx)
+
 	db, err := sql.Open("postgres", postgresDSN)
 	if err != nil {
 		panic(err)
@@ -118,14 +144,14 @@ func main() {
 
 	case "cluster":
 		mustEnsureCollection(ctx, milvus)
-		mustClusterCampaigns(ctx, milvus, db)
+		mustClusterCampaigns(ctx, milvus, db, graphDriver)
 
 	case "all":
 		text := getTextArg()
 		mustEnsureCollection(ctx, milvus)
 		mustStoreEmbedding(ctx, milvus, text)
 		mustVerifyMeaning(ctx, milvus, text)
-		mustClusterCampaigns(ctx, milvus, db)
+		mustClusterCampaigns(ctx, milvus, db, graphDriver)
 
 	default:
 		printUsage()
@@ -377,7 +403,12 @@ func mustVerifyMeaning(ctx context.Context, milvus client.Client, text string) {
 	}
 }
 
-func mustClusterCampaigns(ctx context.Context, milvus client.Client, db *sql.DB) {
+func mustClusterCampaigns(
+	ctx context.Context,
+	milvus client.Client,
+	db *sql.DB,
+	graphDriver neo4j.DriverWithContext,
+) {
 	posts := mustFetchStoredPosts(ctx, milvus)
 
 	if len(posts) < 2 {
@@ -393,31 +424,40 @@ func mustClusterCampaigns(ctx context.Context, milvus client.Client, db *sql.DB)
 	minClusterSize := 2
 	clusters := mustRunHDBSCAN(embeddings, minClusterSize)
 
-	grouped := map[int][]HDBSCANCluster{}
+	if len(clusters.Clusters) == 0 {
+		fmt.Println("No campaign clusters found.")
+		return
+	}
+
+	resultByIndex := make(map[int]HDBSCANCluster)
 
 	for _, result := range clusters.Results {
 		if result.IsNoise || result.ClusterID < 0 {
 			continue
 		}
 
-		grouped[result.ClusterID] = append(grouped[result.ClusterID], result)
+		resultByIndex[result.Index] = result
 	}
 
-	if len(grouped) == 0 {
-		fmt.Println("No campaign clusters found.")
-		return
-	}
+	campaigns := make([]CampaignNode, 0, len(clusters.Clusters))
 
-	for clusterID, members := range grouped {
-		clusterPosts := make([]StoredPost, 0, len(members))
+	for _, cluster := range clusters.Clusters {
+		clusterPosts := make([]StoredPost, 0, len(cluster.MemberIndexes))
+		clusterMembers := make([]HDBSCANCluster, 0, len(cluster.MemberIndexes))
 		totalProbability := 0.0
 
-		for _, member := range members {
-			if member.Index >= len(posts) {
+		for _, postIndex := range cluster.MemberIndexes {
+			if postIndex >= len(posts) {
 				continue
 			}
 
-			clusterPosts = append(clusterPosts, posts[member.Index])
+			member, exists := resultByIndex[postIndex]
+			if !exists {
+				continue
+			}
+
+			clusterPosts = append(clusterPosts, posts[postIndex])
+			clusterMembers = append(clusterMembers, member)
 			totalProbability += member.Probability
 		}
 
@@ -425,18 +465,54 @@ func mustClusterCampaigns(ctx context.Context, milvus client.Client, db *sql.DB)
 			continue
 		}
 
-		name := mustNameCluster(clusterPosts)
+		representativePosts := mustFindRepresentativePosts(
+			ctx,
+			milvus,
+			cluster.Centroid,
+			10,
+		)
+
+		if len(representativePosts) == 0 {
+			representativePosts = clusterPosts
+		}
+
+		name := mustNameCluster(representativePosts)
 		avgProbability := totalProbability / float64(len(clusterPosts))
 
-		mustStoreCampaignCluster(ctx, db, clusterID, name, clusterPosts, members, avgProbability)
+		mustStoreCampaignCluster(
+			ctx,
+			db,
+			cluster.ClusterID,
+			name,
+			clusterPosts,
+			clusterMembers,
+			avgProbability,
+		)
+
+		mustStoreCampaignNode(
+			ctx,
+			graphDriver,
+			cluster.ClusterID,
+			name,
+			len(clusterPosts),
+			avgProbability,
+		)
+
+		campaigns = append(campaigns, CampaignNode{
+			ClusterID: cluster.ClusterID,
+			Name:      name,
+			Centroid:  cluster.Centroid,
+		})
 
 		fmt.Println("Campaign cluster stored")
-		fmt.Println("Cluster ID:", clusterID)
+		fmt.Println("Cluster ID:", cluster.ClusterID)
 		fmt.Println("Name:", name)
 		fmt.Println("Posts:", len(clusterPosts))
 		fmt.Printf("Average probability: %.4f\n", avgProbability)
 		fmt.Println()
 	}
+
+	mustCreateCampaignRelationships(ctx, graphDriver, campaigns)
 }
 
 func mustFetchStoredPosts(ctx context.Context, milvus client.Client) []StoredPost {
@@ -501,6 +577,72 @@ func mustFetchStoredPosts(ctx context.Context, milvus client.Client) []StoredPos
 	return posts
 }
 
+func mustFindRepresentativePosts(
+	ctx context.Context,
+	milvus client.Client,
+	centroid []float32,
+	limit int,
+) []StoredPost {
+	searchParam, err := entity.NewIndexFlatSearchParam()
+	if err != nil {
+		panic(err)
+	}
+
+	results, err := milvus.Search(
+		ctx,
+		collectionName,
+		[]string{},
+		"",
+		[]string{"id", "text"},
+		[]entity.Vector{
+			entity.FloatVector(centroid),
+		},
+		"embedding",
+		entity.COSINE,
+		limit,
+		searchParam,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	posts := make([]StoredPost, 0)
+
+	for _, result := range results {
+		var ids []int64
+		var texts []string
+
+		for _, field := range result.Fields {
+			switch c := field.(type) {
+			case *entity.ColumnInt64:
+				if c.Name() == "id" {
+					ids = c.Data()
+				}
+
+			case *entity.ColumnVarChar:
+				if c.Name() == "text" {
+					texts = c.Data()
+				}
+			}
+		}
+
+		for i := range texts {
+			id := int64(0)
+
+			if i < len(ids) {
+				id = ids[i]
+			}
+
+			posts = append(posts, StoredPost{
+				ID:   id,
+				Text: texts[i],
+			})
+		}
+	}
+
+	return posts
+}
+
 func mustRunHDBSCAN(embeddings [][]float32, minClusterSize int) HDBSCANResponse {
 	body, err := json.Marshal(HDBSCANRequest{
 		Embeddings:     embeddings,
@@ -549,23 +691,22 @@ func mustNameCluster(posts []StoredPost) string {
 			Posts: postTexts,
 
 			UserPrompt: `
-	Return only valid JSON:
-	
-	{"name":"cluster name"}
-	
-	Rules:
-	- 2 to 5 words
-	- neutral
-	- no explanation
-	- no markdown
-	- no reasoning
-	`,
+Return only valid JSON:
+
+{"name":"cluster name"}
+
+Rules:
+- 2 to 5 words
+- neutral
+- no explanation
+- no markdown
+- no reasoning
+`,
 
 			Temperature: 0.1,
 			MaxTokens:   32,
 		},
 	)
-
 	if err != nil {
 		panic(err)
 	}
@@ -599,14 +740,7 @@ func mustNameCluster(posts []StoredPost) string {
 	}
 
 	if name == "" || name == "Unnamed Cluster" {
-		name = fmt.Sprintf(
-			"Cluster %d",
-			time.Now().Unix(),
-		)
-	}
-
-	if name == "" {
-		return "Unnamed Campaign Cluster"
+		name = fmt.Sprintf("Cluster %d", time.Now().Unix())
 	}
 
 	return name
@@ -681,6 +815,159 @@ func mustStoreCampaignCluster(
 	}
 
 	if err := tx.Commit(); err != nil {
+		panic(err)
+	}
+}
+
+func mustStoreCampaignNode(
+	ctx context.Context,
+	driver neo4j.DriverWithContext,
+	clusterID int,
+	name string,
+	postCount int,
+	avgProbability float64,
+) {
+	session := driver.NewSession(
+		ctx,
+		neo4j.SessionConfig{},
+	)
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(
+		ctx,
+		func(tx neo4j.ManagedTransaction) (any, error) {
+			_, err := tx.Run(
+				ctx,
+				`
+				MERGE (c:Campaign {
+					cluster_id: $cluster_id
+				})
+				SET
+					c.name = $name,
+					c.post_count = $post_count,
+					c.avg_probability = $avg_probability
+				`,
+				map[string]any{
+					"cluster_id":      clusterID,
+					"name":            name,
+					"post_count":      postCount,
+					"avg_probability": avgProbability,
+				},
+			)
+
+			return nil, err
+		},
+	)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func mustCreateCampaignRelationships(
+	ctx context.Context,
+	driver neo4j.DriverWithContext,
+	campaigns []CampaignNode,
+) {
+	for i := 0; i < len(campaigns); i++ {
+		for j := i + 1; j < len(campaigns); j++ {
+			similarity := cosineSimilarity(
+				campaigns[i].Centroid,
+				campaigns[j].Centroid,
+			)
+
+			if similarity < campaignRelationshipThreshold {
+				continue
+			}
+
+			mustCreateCampaignRelationship(
+				ctx,
+				driver,
+				campaigns[i].ClusterID,
+				campaigns[j].ClusterID,
+				similarity,
+			)
+
+			fmt.Printf(
+				"Graph relationship created: %s -> %s %.4f\n",
+				campaigns[i].Name,
+				campaigns[j].Name,
+				similarity,
+			)
+		}
+	}
+}
+
+func cosineSimilarity(
+	a []float32,
+	b []float32,
+) float64 {
+	if len(a) == 0 || len(b) == 0 || len(a) != len(b) {
+		return 0
+	}
+
+	var dot float64
+	var normA float64
+	var normB float64
+
+	for i := range a {
+		av := float64(a[i])
+		bv := float64(b[i])
+
+		dot += av * bv
+		normA += av * av
+		normB += bv * bv
+	}
+
+	denominator := math.Sqrt(normA) * math.Sqrt(normB)
+
+	if denominator == 0 {
+		return 0
+	}
+
+	return dot / denominator
+}
+
+func mustCreateCampaignRelationship(
+	ctx context.Context,
+	driver neo4j.DriverWithContext,
+	sourceID int,
+	targetID int,
+	similarity float64,
+) {
+	session := driver.NewSession(
+		ctx,
+		neo4j.SessionConfig{},
+	)
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(
+		ctx,
+		func(tx neo4j.ManagedTransaction) (any, error) {
+			_, err := tx.Run(
+				ctx,
+				`
+				MATCH (a:Campaign {
+					cluster_id: $source
+				})
+				MATCH (b:Campaign {
+					cluster_id: $target
+				})
+				MERGE (a)-[r:SIMILAR_TO]->(b)
+				SET r.similarity = $similarity
+				`,
+				map[string]any{
+					"source":     sourceID,
+					"target":     targetID,
+					"similarity": similarity,
+				},
+			)
+
+			return nil, err
+		},
+	)
+
+	if err != nil {
 		panic(err)
 	}
 }
