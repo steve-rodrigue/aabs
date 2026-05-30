@@ -91,3 +91,19 @@ services:
       - ./data/milvus:/var/lib/milvus
 
     restart: unless-stopped
+
+  hdbscan:
+    build:
+      context: ./models/hdbscan
+      dockerfile: Dockerfile
+
+    container_name: aabs-hdbscan
+
+    ports:
+      - "8090:8090"
+
+    restart: unless-stopped
+
+    depends_on:
+      - milvus
+      - embeddings
