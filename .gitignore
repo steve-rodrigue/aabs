@@ -1,0 +1,12 @@
+# Environment variables
+.env
+
+# Model cache and downloaded data
+services/data/
+
+# Optional Python cache
+__pycache__/
+*.pyc
+
+# Optional macOS files
+.DS_Store

@@ -1,0 +1,22 @@
+services:
+  embeddings:
+    build:
+      context: ./models/embeddings
+      dockerfile: Dockerfile
+      args:
+        HF_TOKEN: ${HF_TOKEN}
+
+    container_name: aabs-embeddings
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      HF_HOME: /models
+      TRANSFORMERS_CACHE: /models
+      HF_TOKEN: ${HF_TOKEN}
+
+    volumes:
+      - ./data/models:/models
+
+    restart: unless-stopped
