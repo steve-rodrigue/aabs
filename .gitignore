@@ -1,12 +1,25 @@
 # Environment variables
 .env
 
-# Model cache and downloaded data
+# Docker persistent data
 services/data/
 
-# Optional Python cache
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-# Optional macOS files
+# macOS
 .DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Python virtual environments
+venv/
+.venv/
