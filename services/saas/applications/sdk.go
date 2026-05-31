@@ -17,14 +17,11 @@ import (
 type Application interface {
 	// Ingestion
 	ProcessPost(post posts.Post) error
-
 	ProcessPosts(posts []posts.Post) error
-
 	Rebuild() error
 
 	// Posts
 	Post(id uuid.UUID) (posts.Post, error)
-
 	Posts() ([]posts.Post, error)
 
 	// Campaigns
@@ -52,7 +49,6 @@ type Application interface {
 
 	// Communities
 	Community(id uuid.UUID) (communities.Community, error)
-
 	Communities() ([]communities.Community, error)
 
 	// Relationships
