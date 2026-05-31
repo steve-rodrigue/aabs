@@ -1,5 +1,9 @@
 # AABS
 
+> **Project Status: Active Development**
+
+> AABS is currently under active development. The initial goal is to deliver a functional Minimum Viable Product (MVP) by the end of May 31, 2026.
+
 AABS (Anti-AI Bot Spam) is an open-source browser extension and platform designed to help users identify spam, bot networks, coordinated manipulation, and low-quality engagement on social media.
 
 Rather than focusing solely on whether an account is a bot, AABS analyzes content similarity, posting behavior, semantic patterns, and network activity to detect coordinated campaigns, repetitive social-proof behavior, and other forms of artificial amplification.
