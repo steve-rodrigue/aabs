@@ -4,13 +4,17 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/platforms"
 )
 
 // User represents a user
 type User interface {
 	Identifier() uuid.UUID
-	ID() string
+	Platform() platforms.Platform
+	ExternalID() string
 	Handle() string
+	DisplayName() string
+	ProfileURL() string
 	CreatedOn() time.Time
 }
 
@@ -18,6 +22,6 @@ type User interface {
 type Repository interface {
 	Save(user User) error
 	FindByID(id uuid.UUID) (User, error)
-	FindByExternalID(id string) (User, error)
-	FindByHandle(handle string) (User, error)
+	FindByPlatformAndExternalID(platform platforms.Platform, externalID string) (User, error)
+	FindByPlatformAndHandle(platform platforms.Platform, handle string) (User, error)
 }
