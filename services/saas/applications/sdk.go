@@ -60,6 +60,15 @@ type Application interface {
 	LatestScore(id uuid.UUID) (scores.Score, error)
 	ScoreHistory(id uuid.UUID) ([]scores.Score, error)
 
+	// Search
+	SearchPosts(query string, limit int) ([]posts.Post, error)
+	SearchCampaigns(query string, limit int) ([]campaigns.Campaign, error)
+	SearchTopics(query string, limit int) ([]topics.Topic, error)
+	SearchNarratives(query string, limit int) ([]narratives.Narrative, error)
+	SearchUsers(query string, limit int) ([]users.User, error)
+	SearchCommunities(query string, limit int) ([]communities.Community, error)
+	SearchRelationships(query string, limit int) ([]relationships.Relationship, error)
+
 	// Analytics
 	RecalculateScores() error
 	RebuildCampaigns() error
