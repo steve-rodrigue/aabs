@@ -4,11 +4,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
 )
 
 // Topic represents a semantic subject that can a parent topic
 type Topic interface {
 	Identifier() uuid.UUID
+	Cluster() clusters.Cluster
 	Name() string
 	Description() string
 	CreatedOn() time.Time

@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/campaigns/clusters"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/posts"
 )
 

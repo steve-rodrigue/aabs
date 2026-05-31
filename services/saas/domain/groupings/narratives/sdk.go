@@ -4,11 +4,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
 )
 
 // Narrative represents a narrative
 type Narrative interface {
 	Identifier() uuid.UUID
+	Cluster() clusters.Cluster
 	Name() string
 	Description() string
 	CreatedOn() time.Time
