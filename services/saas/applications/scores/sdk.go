@@ -1,11 +1,15 @@
 package scores
 
 import (
+	"github.com/google/uuid"
 	domain_scores "github.com/steve-rodrigue/aabs/services/saas/domain/scores"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/scores/scorables"
 )
 
-// Calculator calculates all required scores for a target
-type Calculator interface {
+// Application represents the scores application
+type Application interface {
 	Calculate(target scorables.Scorable) ([]domain_scores.Score, error)
+	LatestScore(id uuid.UUID) (domain_scores.Score, error)
+	ScoreHistory(id uuid.UUID) ([]domain_scores.Score, error)
+	RecalculateScores() error
 }

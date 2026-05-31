@@ -1,16 +1,19 @@
 package relationships
 
 import (
+	"github.com/google/uuid"
 	domain_relationships "github.com/steve-rodrigue/aabs/services/saas/domain/relationships"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/relatables"
 )
 
-// Builder builds graph relationships between relatable entities
-type Builder interface {
+// Application represents the relationships application
+type Application interface {
 	Build(source relatables.Relatable, targets []relatables.Relatable) ([]domain_relationships.Relationship, error)
-}
-
-// Synchronizer persists relationships to the graph store
-type Synchronizer interface {
 	Sync(relationships []domain_relationships.Relationship) error
+
+	FindAll() ([]domain_relationships.Relationship, error)
+	RelationshipsBySource(id uuid.UUID) ([]domain_relationships.Relationship, error)
+	RelationshipsByTarget(id uuid.UUID) ([]domain_relationships.Relationship, error)
+
+	RebuildRelationships() error
 }
