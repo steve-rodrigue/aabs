@@ -4,13 +4,17 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/communities"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/posts/contents"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/users"
 )
 
 // Post represents a post
 type Post interface {
 	Identifier() uuid.UUID
-	UserID() string
-	Text() string
+	Community() communities.Community
+	Creator() users.User
+	Content() contents.Content
 	CreatedOn() time.Time
 }
 
