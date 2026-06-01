@@ -8,6 +8,16 @@ import (
 	"github.com/steve-rodrigue/aabs/services/saas/applications/groupings/topics"
 )
 
+func NewMockGroupingsApplication() *MockGroupingsApplication {
+	return &MockGroupingsApplication{
+		ClustersIns:       clusters.NewMockClustersApplication(),
+		CampaignsIns:      campaigns.NewMockCampaignsApplication(),
+		TopicsIns:         topics.NewMockTopicsApplication(),
+		NarrativesIns:     narratives.NewMockNarrativesApplication(),
+		ParticipationsIns: participations.NewMockParticipationsApplication(),
+	}
+}
+
 type MockGroupingsApplication struct {
 	ClustersIns       clusters.Application
 	CampaignsIns      campaigns.Application

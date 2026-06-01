@@ -2,37 +2,81 @@ package clusters
 
 import (
 	"github.com/google/uuid"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
+
 	domain_clusters "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 )
 
+func NewMockClustersApplication() *MockClustersApplication {
+	return &MockClustersApplication{}
+}
+
 type MockClustersApplication struct {
+	BuildForTargetCalls int
+	BuildForTargetErr   error
+
+	FindByIDCalls int
+	FindByIDErr   error
+
+	FindByTargetCalls int
+	FindByTargetErr   error
+
+	FindByMemberCalls int
+	FindByMemberErr   error
+
+	RebuildAllCalls int
+	RebuildAllErr   error
+
 	RebuildPostClustersCalls int
 	RebuildPostClustersErr   error
+
+	RebuildCampaignClustersCalls int
+	RebuildCampaignClustersErr   error
+
+	RebuildTopicClustersCalls int
+	RebuildTopicClustersErr   error
+
+	RebuildNarrativeClustersCalls int
+	RebuildNarrativeClustersErr   error
 }
 
 func (application *MockClustersApplication) BuildForTarget(
 	target clusterables.Clusterable,
 	members []clusterables.Clusterable,
 ) ([]domain_clusters.Cluster, error) {
-	return nil, nil
+	application.BuildForTargetCalls++
+
+	return nil, application.BuildForTargetErr
 }
 
-func (application *MockClustersApplication) FindByID(id uuid.UUID) (clusters.Cluster, error) {
-	return nil, nil
+func (application *MockClustersApplication) FindByID(
+	id uuid.UUID,
+) (domain_clusters.Cluster, error) {
+	application.FindByIDCalls++
+
+	return nil, application.FindByIDErr
 }
 
-func (application *MockClustersApplication) FindByTarget(target clusterables.Clusterable) ([]domain_clusters.Cluster, error) {
-	return nil, nil
+func (application *MockClustersApplication) FindByTarget(
+	target clusterables.Clusterable,
+) ([]domain_clusters.Cluster, error) {
+	application.FindByTargetCalls++
+
+	return nil, application.FindByTargetErr
 }
 
-func (application *MockClustersApplication) FindByMember(member clusterables.Clusterable) ([]domain_clusters.Cluster, error) {
-	return nil, nil
+func (application *MockClustersApplication) FindByMember(
+	member clusterables.Clusterable,
+) ([]domain_clusters.Cluster, error) {
+	application.FindByMemberCalls++
+
+	return nil, application.FindByMemberErr
 }
 
 func (application *MockClustersApplication) RebuildAll() error {
-	return nil
+	application.RebuildAllCalls++
+
+	return application.RebuildAllErr
 }
 
 func (application *MockClustersApplication) RebuildPostClusters() error {
@@ -42,13 +86,19 @@ func (application *MockClustersApplication) RebuildPostClusters() error {
 }
 
 func (application *MockClustersApplication) RebuildCampaignClusters() error {
-	return nil
+	application.RebuildCampaignClustersCalls++
+
+	return application.RebuildCampaignClustersErr
 }
 
 func (application *MockClustersApplication) RebuildTopicClusters() error {
-	return nil
+	application.RebuildTopicClustersCalls++
+
+	return application.RebuildTopicClustersErr
 }
 
 func (application *MockClustersApplication) RebuildNarrativeClusters() error {
-	return nil
+	application.RebuildNarrativeClustersCalls++
+
+	return application.RebuildNarrativeClustersErr
 }

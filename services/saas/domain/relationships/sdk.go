@@ -23,6 +23,7 @@ type Relationship interface {
 
 // Repository represents a relationshp repository
 type Repository interface {
+	FindByID(id uuid.UUID) (Relationship, error)
 	Save(relationship Relationship) error
 	FindBySource(source relatables.Relatable) ([]Relationship, error)
 	FindByTarget(target relatables.Relatable) ([]Relationship, error)

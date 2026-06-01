@@ -42,8 +42,11 @@ func (app *application) ProcessPost(post posts.Post) error {
 		return err
 	}
 
-	text := post.Content().Text()
+	if err := app.searches.IndexPost(post); err != nil {
+		return err
+	}
 
+	text := post.Content().Text()
 	if _, err := app.searches.SearchPosts(text, 50); err != nil {
 		return err
 	}

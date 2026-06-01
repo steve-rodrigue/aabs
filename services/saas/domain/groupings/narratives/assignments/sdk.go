@@ -2,8 +2,8 @@ package assignments
 
 import (
 	"github.com/google/uuid"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/campaigns"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/narratives"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/campaigns"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/narratives"
 )
 
 // Assignment represents an assignment

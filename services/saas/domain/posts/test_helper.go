@@ -45,6 +45,11 @@ func (post *MockPost) CreatedOn() time.Time {
 type MockPostRepository struct {
 	SaveCalls int
 	SaveErr   error
+
+	Items map[uuid.UUID]Post
+
+	FindByIDCalls int
+	FindByIDErr   error
 }
 
 func (repository *MockPostRepository) Save(post Post) error {
@@ -54,5 +59,15 @@ func (repository *MockPostRepository) Save(post Post) error {
 }
 
 func (repository *MockPostRepository) FindByID(id uuid.UUID) (Post, error) {
-	return nil, nil
+	repository.FindByIDCalls++
+
+	if repository.FindByIDErr != nil {
+		return nil, repository.FindByIDErr
+	}
+
+	if repository.Items == nil {
+		return nil, nil
+	}
+
+	return repository.Items[id], nil
 }

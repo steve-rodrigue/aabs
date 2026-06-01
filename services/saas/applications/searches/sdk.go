@@ -3,11 +3,13 @@ package searches
 import (
 	"github.com/google/uuid"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/communities"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/embeddings"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/campaigns"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/narratives"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/topics"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/searches"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/users"
 )
 
@@ -23,6 +25,33 @@ const (
 	RelationshipKind ResultKind = "relationship"
 )
 
+// New creates a new search application
+func New(
+	embedder embeddings.Embedder,
+	searchRepository searches.Repository,
+	postRepository posts.Repository,
+	userRepository users.Repository,
+	communityRepository communities.Repository,
+	campaignRepository campaigns.Repository,
+	topicRepository topics.Repository,
+	narrativeRepository narratives.Repository,
+	relationshipRepository relationships.Repository,
+
+) Application {
+	return createApplication(
+		embedder,
+		searchRepository,
+		postRepository,
+		userRepository,
+		communityRepository,
+		campaignRepository,
+		topicRepository,
+		narrativeRepository,
+		relationshipRepository,
+	)
+
+}
+
 // Result represents a search result
 type Result interface {
 	Identifier() uuid.UUID
@@ -34,6 +63,7 @@ type Result interface {
 
 // Application represents a search application
 type Application interface {
+	IndexPost(post posts.Post) error
 	Search(query string, limit int) ([]Result, error)
 	SearchPosts(query string, limit int) ([]posts.Post, error)
 	SearchCampaigns(query string, limit int) ([]campaigns.Campaign, error)

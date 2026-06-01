@@ -4,16 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	app_searches "github.com/steve-rodrigue/aabs/services/saas/applications/searches"
-
-	"github.com/steve-rodrigue/aabs/services/saas/applications/groupings"
-	"github.com/steve-rodrigue/aabs/services/saas/applications/groupings/campaigns"
-	"github.com/steve-rodrigue/aabs/services/saas/applications/groupings/clusters"
-	"github.com/steve-rodrigue/aabs/services/saas/applications/groupings/narratives"
-	"github.com/steve-rodrigue/aabs/services/saas/applications/groupings/participations"
-	"github.com/steve-rodrigue/aabs/services/saas/applications/groupings/topics"
-	"github.com/steve-rodrigue/aabs/services/saas/applications/relationships"
-	"github.com/steve-rodrigue/aabs/services/saas/applications/scores"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/posts"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/posts"
 )
@@ -32,6 +22,14 @@ func TestProcessPostSuccess(t *testing.T) {
 
 	if fixture.postRepository.SaveCalls != 1 {
 		t.Fatalf("expected 1 post save, got %d", fixture.postRepository.SaveCalls)
+	}
+
+	if fixture.searches.IndexPostCalls != 1 {
+		t.Fatalf("expected 1 index post call, got %d", fixture.searches.IndexPostCalls)
+	}
+
+	if fixture.searches.LastPost != post {
+		t.Fatalf("expected indexed post to be the processed post")
 	}
 
 	if fixture.searches.SearchPostsCalls != 1 {
@@ -81,8 +79,35 @@ func TestProcessPostReturnsSaveError(t *testing.T) {
 		t.Fatalf("expected save error, got %v", err)
 	}
 
+	if fixture.searches.IndexPostCalls != 0 {
+		t.Fatalf("expected index post not to be called")
+	}
+
 	if fixture.searches.SearchPostsCalls != 0 {
 		t.Fatalf("expected search not to be called")
+	}
+}
+
+func TestProcessPostReturnsIndexPostError(t *testing.T) {
+	fixture := newApplicationFixture()
+	fixture.searches.IndexPostErr = errTest
+
+	err := fixture.application.ProcessPost(posts.NewMockPost("hello"))
+
+	if !errors.Is(err, errTest) {
+		t.Fatalf("expected index post error, got %v", err)
+	}
+
+	if fixture.searches.IndexPostCalls != 1 {
+		t.Fatalf("expected 1 index post call, got %d", fixture.searches.IndexPostCalls)
+	}
+
+	if fixture.searches.SearchPostsCalls != 0 {
+		t.Fatalf("expected search not to be called")
+	}
+
+	if fixture.clusters.RebuildPostClustersCalls != 0 {
+		t.Fatalf("expected rebuild not to be called")
 	}
 }
 
@@ -98,6 +123,10 @@ func TestProcessPostReturnsSearchError(t *testing.T) {
 
 	if fixture.clusters.RebuildPostClustersCalls != 0 {
 		t.Fatalf("expected rebuild not to be called")
+	}
+
+	if fixture.searches.IndexPostCalls != 1 {
+		t.Fatalf("expected index post to be called before search")
 	}
 }
 
@@ -124,6 +153,10 @@ func TestProcessPostsSuccess(t *testing.T) {
 	if fixture.clusters.RebuildPostClustersCalls != 2 {
 		t.Fatalf("expected 2 rebuilds, got %d", fixture.clusters.RebuildPostClustersCalls)
 	}
+
+	if fixture.searches.IndexPostCalls != 2 {
+		t.Fatalf("expected 2 index post calls, got %d", fixture.searches.IndexPostCalls)
+	}
 }
 
 func TestProcessPostsStopsOnError(t *testing.T) {
@@ -141,6 +174,10 @@ func TestProcessPostsStopsOnError(t *testing.T) {
 
 	if fixture.postRepository.SaveCalls != 1 {
 		t.Fatalf("expected processing to stop after first post")
+	}
+
+	if fixture.searches.IndexPostCalls != 1 {
+		t.Fatalf("expected 1 index post call, got %d", fixture.searches.IndexPostCalls)
 	}
 }
 
@@ -204,69 +241,5 @@ func TestRebuildReturnsErrors(t *testing.T) {
 				t.Fatalf("expected rebuild error, got %v", err)
 			}
 		})
-	}
-}
-
-type applicationFixture struct {
-	application Application
-
-	postRepository *posts.MockPostRepository
-	searches       *app_searches.MockSearchApplication
-
-	groupings      *groupings.MockGroupingsApplication
-	clusters       *clusters.MockClustersApplication
-	campaigns      *campaigns.MockCampaignsApplication
-	topics         *topics.MockTopicsApplication
-	narratives     *narratives.MockNarrativesApplication
-	participations *participations.MockParticipationsApplication
-
-	relationships *relationships.MockRelationshipsApplication
-	scores        *scores.MockScoresApplication
-}
-
-func newApplicationFixture() *applicationFixture {
-	postRepository := &posts.MockPostRepository{}
-	searches := &app_searches.MockSearchApplication{}
-
-	clusters := &clusters.MockClustersApplication{}
-	campaigns := &campaigns.MockCampaignsApplication{}
-	topics := &topics.MockTopicsApplication{}
-	narratives := &narratives.MockNarrativesApplication{}
-	participations := &participations.MockParticipationsApplication{}
-
-	groupings := &groupings.MockGroupingsApplication{
-		ClustersIns:       clusters,
-		CampaignsIns:      campaigns,
-		TopicsIns:         topics,
-		NarrativesIns:     narratives,
-		ParticipationsIns: participations,
-	}
-
-	relationships := &relationships.MockRelationshipsApplication{}
-	scores := &scores.MockScoresApplication{}
-
-	application := New(
-		postRepository,
-		searches,
-		groupings,
-		relationships,
-		scores,
-	)
-
-	return &applicationFixture{
-		application: application,
-
-		postRepository: postRepository,
-		searches:       searches,
-
-		groupings:      groupings,
-		clusters:       clusters,
-		campaigns:      campaigns,
-		topics:         topics,
-		narratives:     narratives,
-		participations: participations,
-
-		relationships: relationships,
-		scores:        scores,
 	}
 }
