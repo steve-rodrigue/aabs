@@ -14,6 +14,17 @@ const (
 	NarrativeKind Kind = "narrative"
 )
 
+// ClusterableInput represents a clusterable input
+type ClusterableInput struct {
+	Identifier  uuid.UUID
+	ClusterKind Kind
+}
+
+// Adapter represents a clusterable adapter
+type Adapter interface {
+	ToDomain(input ClusterableInput) (Clusterable, error)
+}
+
 // Clusterable represents a clusterable entity
 type Clusterable interface {
 	Identifier() uuid.UUID

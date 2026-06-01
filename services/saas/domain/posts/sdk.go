@@ -8,6 +8,20 @@ import (
 	"github.com/steve-rodrigue/aabs/services/saas/domain/users"
 )
 
+// PostInput represents a post input
+type PostInput struct {
+	Identifier   uuid.UUID
+	CommunityIDs []uuid.UUID
+	Creator      users.User
+	Content      contents.ContentInput
+	CreatedOn    time.Time
+}
+
+// Adapter represents a post adapter
+type Adapter interface {
+	ToDomain(input PostInput) (Post, error)
+}
+
 // Post represents a post
 type Post interface {
 	Identifier() uuid.UUID
@@ -21,9 +35,4 @@ type Post interface {
 type Repository interface {
 	Save(post Post) error
 	FindByID(id uuid.UUID) (Post, error)
-}
-
-// Processor represents a post processor
-type Processor interface {
-	Process(post Post) error
 }

@@ -21,6 +21,19 @@ const (
 	SimilarityToKnownCampaignType Type = "similarity_to_known_campaign"
 )
 
+// FactorInput represents a factor input
+type FactorInput struct {
+	Name   Type
+	Value  float64
+	Weight float64
+	Reason string
+}
+
+// Adapter represents a factor adapter
+type Adapter interface {
+	ToDomain(input FactorInput) (Factor, error)
+}
+
 // Factor represents a trust score factor
 type Factor interface {
 	Name() Type

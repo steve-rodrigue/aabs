@@ -21,6 +21,22 @@ const (
 	ManipulationType       Type = "manipulation"
 )
 
+// ScoreInput represents a score input
+type ScoreInput struct {
+	Identifier   uuid.UUID
+	Type         Type
+	Target       scorables.Scorable
+	Value        float64
+	Confidence   float64
+	Factors      []factors.Factor
+	CalculatedOn time.Time
+}
+
+// Adapter represents a score adapter
+type Adapter interface {
+	ToDomain(input ScoreInput) (Score, error)
+}
+
 // Score represents the trust score
 type Score interface {
 	Identifier() uuid.UUID

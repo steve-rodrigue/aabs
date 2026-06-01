@@ -15,6 +15,17 @@ const (
 	ClusterKind      Kind = "cluster"
 )
 
+// ScorableInput represents a scorable input
+type ScorableInput struct {
+	Identifier uuid.UUID
+	ScoreKind  Kind
+}
+
+// Adapter represents a scorable adapter
+type Adapter interface {
+	ToDomain(input ScorableInput) (Scorable, error)
+}
+
 // Scorable represents an entity that can receive scores.
 type Scorable interface {
 	Identifier() uuid.UUID

@@ -7,6 +7,26 @@ import (
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 )
 
+// ClusterInput represents a cluster input
+type ClusterInput struct {
+	Identifier uuid.UUID
+
+	Target clusterables.ClusterableInput
+
+	MemberIDs  []uuid.UUID
+	MemberKind clusterables.Kind
+
+	ConfidenceScore float64
+	Centroid        []float32
+
+	CreatedOn time.Time
+}
+
+// Adapter represents a cluster adapter
+type Adapter interface {
+	ToDomain(input ClusterInput) (Cluster, error)
+}
+
 // Cluster represents a cluster
 type Cluster interface {
 	Identifier() uuid.UUID
