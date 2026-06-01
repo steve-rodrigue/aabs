@@ -2,7 +2,7 @@
 
 > Project Status: Active Development
 >
-> AABS is currently under active development. The initial goal is to deliver a functional Minimum Viable Product (MVP) by the end of May 31, 2026.
+> AABS is currently under active development. The initial goal is to deliver a functional Minimum Viable Product (MVP) by the end of May 31st, 2026, or beginning of June 1st, 2026.
 
 AABS (Anti-AI Bot Spam) is an open-source browser extension and platform designed to help users identify spam, bot networks, coordinated manipulation, and low-quality engagement on social media.
 
