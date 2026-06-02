@@ -45,9 +45,14 @@ type Cluster interface {
 // Repository represents a cluster repository
 type Repository interface {
 	Save(cluster Cluster) error
+
 	FindByID(id uuid.UUID) (Cluster, error)
 	FindByTarget(target uuid.UUID) ([]Cluster, error)
 	FindByMember(member uuid.UUID) ([]Cluster, error)
+
+	Find(index int, amount int) ([]Cluster, error)
+	FindAfter(cursor uuid.UUID, amount int) ([]Cluster, error)
+	Count() (int64, error)
 }
 
 // Detector represents a cluster detector

@@ -30,3 +30,15 @@ type Clusterable interface {
 	Identifier() uuid.UUID
 	ClusterKind() Kind
 }
+
+// Repository represents a clusterable repository
+type Repository interface {
+	FindByKind(kind Kind, index int, amount int) ([]Clusterable, error)
+	FindByKindAfter(kind Kind, cursor uuid.UUID, amount int) ([]Clusterable, error)
+	CountByKind(kind Kind) (int64, error)
+}
+
+// CandidateRepository represents a repository that finds likely clustering candidates.
+type CandidateRepository interface {
+	FindCandidates(target Clusterable, kind Kind, amount int) ([]Clusterable, error)
+}
