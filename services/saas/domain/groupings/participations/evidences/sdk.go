@@ -33,3 +33,10 @@ type Repository interface {
 	FindByParticipant(participant participatables.Participatable) ([]Evidence, error)
 	FindByTarget(target participatables.Participatable) ([]Evidence, error)
 }
+
+// Calculator represents a participation evidence calculator
+type Calculator interface {
+	Calculate(
+		participation participations.Participation,
+	) ([]Evidence, error)
+}

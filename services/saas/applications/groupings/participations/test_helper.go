@@ -3,15 +3,21 @@ package participations
 import (
 	"github.com/google/uuid"
 
+	"github.com/steve-rodrigue/aabs/services/saas/applications/groupings/participations/evidences"
 	domain_participations "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
 func NewMockParticipationsApplication() *MockParticipationsApplication {
-	return &MockParticipationsApplication{}
+	return &MockParticipationsApplication{
+		EvidencesValue: evidences.NewMockEvidencesApplication(),
+	}
 }
 
 type MockParticipationsApplication struct {
+	EvidencesCalls int
+	EvidencesValue evidences.Application
+
 	FindByIDCalls int
 	FindByIDErr   error
 	FindByIDValue domain_participations.Participation
@@ -30,6 +36,12 @@ type MockParticipationsApplication struct {
 
 	RebuildParticipationsCalls int
 	RebuildParticipationsErr   error
+}
+
+func (application *MockParticipationsApplication) Evidences() evidences.Application {
+	application.EvidencesCalls++
+
+	return application.EvidencesValue
 }
 
 func (application *MockParticipationsApplication) FindByID(

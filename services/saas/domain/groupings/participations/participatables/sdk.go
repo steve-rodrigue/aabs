@@ -21,3 +21,9 @@ type Participatable interface {
 	Identifier() uuid.UUID
 	ParticipationKind() Kind
 }
+
+// Repository represents a participatable repository
+type Repository interface {
+	FindAllParticipants() ([]Participatable, error)
+	FindAllTargets() ([]Participatable, error)
+}
