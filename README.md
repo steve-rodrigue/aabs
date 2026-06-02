@@ -1,8 +1,6 @@
 # AABS
 
 > Project Status: Active Development
->
-> AABS is currently under active development. The initial goal is to deliver a functional Minimum Viable Product (MVP) by the end of June 1st, 2026.  I adjusted the timeline from the previous May 31st, 2026 to not work all night.  My wife is very happy that I made that decision.  Happy wife, happy life!
 
 AABS (Anti-AI Bot Spam) is an open-source browser extension and platform designed to help users identify spam, bot networks, coordinated manipulation, and low-quality engagement on social media.
 
@@ -10,204 +8,359 @@ Rather than focusing solely on whether an account is a bot, AABS analyzes conten
 
 AABS assigns trust scores to accounts, posts, comments, and conversations, helping users distinguish authentic discussion from coordinated or deceptive activity.
 
-## SaaS Domain Model
+## Table of Contents
 
-The domain objects described below belong to the SaaS backend portion of AABS.
+- Overview
 
-They define how the SaaS receives posts, analyzes content, stores semantic relationships, calculates trust scores, and exposes campaign detection results to the browser extension, dashboards, APIs, and other clients.
+- Architecture
+  - Layers
+  - Application Graph
 
-### Core Entities
+- Applications
+  - Root Application
+  - Pipeline Application
 
-#### Platform
+  - Posts Application
+  - Users Application
+  - Communities Application
+  - Platforms Application
+  - Searches Application
 
-A website or service where content is published.
+  - Groupings Application
+    - Clusters Application
+    - Campaigns Application
+    - Topics Application
+    - Narratives Application
+    - Participations Application
+      - Participation Evidences Application
 
-Examples:
+  - Relationships Application
+    - Comparables Application
 
-- Reddit
-- X (Twitter)
-- Facebook
-- YouTube
-- TikTok
+  - Scores Application
 
-#### Community
+- Processing Pipeline
 
-A group within a platform where users publish content.
+- Development
 
-Examples:
+- License
 
-- r/politics
-- r/worldnews
-- Facebook groups
-- Discord servers
-- YouTube channels
+## Overview
 
-#### User
+AABS continuously ingests social media content and transforms it into a semantic graph.
 
-A platform account that creates content.
+The system stores content, indexes it for semantic search, groups related entities, calculates participations, builds relationships, and continuously updates trust scores.
 
-Users belong to a platform and may participate in communities, topics, narratives, and campaigns.
+The platform is built around a modular application layer where every feature is exposed through a dedicated application interface.
 
-#### Post
+## Architecture
 
-A piece of content published by a user.
+### Layers
 
-Posts are the primary input processed by the SaaS pipeline.
+The SaaS backend is organized into three primary layers.
 
-### Semantic Groupings
+text Applications     |     v Domain     |     v Infrastructure 
 
-#### Cluster
+Applications orchestrate workflows.
 
-A cluster is a collection of semantically similar entities.
+The domain layer defines business rules and interfaces.
 
-Clusters are generated automatically using embeddings and clustering algorithms.
+The infrastructure layer provides implementations such as databases, embedding engines, search indexes, and external integrations.
 
-Examples:
+### Application Graph
 
-- Similar posts
-- Similar users
-- Similar campaigns
-- Similar topics
-- Similar narratives
+text Application ├── Pipeline ├── Posts ├── Users ├── Communities ├── Platforms ├── Searches ├── Groupings │   ├── Clusters │   ├── Campaigns │   ├── Topics │   ├── Narratives │   └── Participations │       └── Evidences ├── Relationships │   └── Comparables └── Scores 
 
-#### Campaign
+Applications communicate through interfaces rather than concrete implementations.
 
-A campaign is a recurring pattern of semantically related content.
+This keeps the system testable, modular, and independent from storage technologies.
 
-Campaigns are derived from clusters of posts and represent coordinated or repeated messaging.
+## Applications
 
-Examples:
+### Root Application
 
-- Political messaging campaigns
-- Product promotion campaigns
-- Spam campaigns
-- Influence operations
+The root application exposes the complete application graph.
 
-#### Topic
+Responsibilities:
 
-A topic represents a semantic subject.
+- Provide access to all applications
+- Centralize application wiring
+- Act as the main entry point for consumers
 
-Topics can form a hierarchical tree and may contain sub-topics.
+Exposed applications:
 
-Examples:
-
-- Politics
-  - Elections
-  - Immigration
-- Technology
-  - Artificial Intelligence
-  - Cybersecurity
-
-#### Narrative
-
-A narrative represents a specific story, claim, or message being propagated.
-
-Examples:
-
-- "Candidate X is corrupt"
-- "Product Y is dangerous"
-- "Technology Z will replace jobs"
-
-Topics describe what is being discussed.
-
-Narratives describe what is being claimed.
-
-### Participations
-
-Participations measure how strongly one entity contributes to another.
-
-Examples:
-
-- User → Campaign
-- User → Topic
-- User → Narrative
-- Community → Campaign
-- Platform → Narrative
-
-Each participation contains:
-
-- Number of matching posts
-- Total posts analyzed
-- Participation percentage
-- Evidence supporting the participation
-
-### Relationships
-
-Relationships connect semantically related entities.
-
-Examples:
-
-- Campaign ↔ Campaign
-- Topic ↔ Topic
-- Narrative ↔ Narrative
-- User ↔ User
-- Campaign ↔ Narrative
-
-Each relationship contains a similarity score derived from semantic comparison.
-
-### Trust Scores
-
-Trust scores estimate the likelihood that an entity represents authentic behavior.
-
-Scores may be calculated for:
-
-- Users
+- Pipeline
 - Posts
+- Users
+- Communities
+- Platforms
+- Searches
+- Groupings
+- Relationships
+- Scores
+
+### Pipeline Application
+
+The pipeline application orchestrates content ingestion and semantic graph rebuilding.
+
+Responsibilities:
+
+- Process a single post
+- Process multiple posts
+- Rebuild semantic artifacts
+
+The pipeline is the primary entry point for newly discovered content.
+
+### Posts Application
+
+The posts application manages content storage and retrieval.
+
+Responsibilities:
+
+- Save posts
+- Find posts by identifier
+- Find posts using index pagination
+- Find posts using cursor pagination
+- Count posts
+- Find posts by user
+- Find posts by community
+- Find posts by platform
+
+### Users Application
+
+The users application manages platform users.
+
+Responsibilities:
+
+- Save users
+- Find users by identifier
+- Find users by platform-specific identifier
+- Find users using index pagination
+- Find users using cursor pagination
+- Count users
+
+### Communities Application
+
+The communities application manages communities within platforms.
+
+Responsibilities:
+
+- Save communities
+- Find communities by identifier
+- Find communities by platform and handle
+- Find communities using index pagination
+- Find communities using cursor pagination
+- Find communities by platform
+- Count communities
+
+### Platforms Application
+
+The platforms application manages content platforms.
+
+Responsibilities:
+
+- Save platforms
+- Find platforms by identifier
+- Find platforms by handle
+- Find platforms using index pagination
+- Find platforms using cursor pagination
+- Count platforms
+
+### Searches Application
+
+The searches application provides semantic search.
+
+Responsibilities:
+
+- Index searchable entities
+- Execute semantic searches
+- Return ranked search results
+
+Any object implementing the searchable interface can be indexed.
+
+Search results expose:
+
+- Identifier
+- Kind
+- Optional title
+- Text
+- Similarity score
+
+The search system is intentionally generic and independent from specific entity types.
+
+### Groupings Application
+
+The groupings application provides access to semantic grouping subsystems.
+
+Responsibilities:
+
+- Access campaigns
+- Access topics
+- Access narratives
+- Access participations
+- Access clusters
+
+#### Clusters Application
+
+The clusters application groups semantically similar entities.
+
+Responsibilities:
+
+- Build clusters for a target entity
+- Find clusters by identifier
+- Find clusters by target
+- Find clusters by member
+- Rebuild all clusters
+- Rebuild clusters by entity type
+
+Supported cluster rebuild operations:
+
+- Posts
+- Users
+- Communities
+- Platforms
 - Campaigns
 - Topics
 - Narratives
-- Communities
-- Relationships
-- Clusters
 
-Trust scores are composed of weighted factors including:
+Clusters are the foundation of higher-level semantic analysis.
 
-- Semantic repetition
-- Campaign participation
-- User concentration
-- Account age
-- Posting velocity
-- Relationship risk
-- Community spread
-- Content quality signals
+#### Campaigns Application
 
-### Processing Pipeline
+The campaigns application identifies recurring semantic patterns.
 
-When a post is received by the SaaS:
+Responsibilities:
 
-1. The post is stored.
-2. An embedding is generated.
-3. The embedding is indexed for semantic search.
-4. Similar content is identified.
-5. Clusters are updated.
-6. Campaigns, topics, and narratives are rebuilt.
-7. Participations are recalculated.
-8. Relationships are generated.
-9. Trust scores are updated.
+- Find campaigns by identifier
+- Find campaigns using index pagination
+- Find campaigns using cursor pagination
+- Find campaigns by user
+- Find campaigns by community
+- Find campaigns by platform
+- Count campaigns
+- Rebuild campaigns
 
-This pipeline continuously updates the semantic graph as new content is ingested.
+#### Topics Application
+
+The topics application identifies discussion subjects.
+
+Responsibilities:
+
+- Find topics by identifier
+- Find topics using index pagination
+- Find topics using cursor pagination
+- Find topics by user
+- Find topics by community
+- Count topics
+- Rebuild topics
+
+#### Narratives Application
+
+The narratives application identifies claims and stories being propagated.
+
+Responsibilities:
+
+- Find narratives by identifier
+- Find narratives using index pagination
+- Find narratives using cursor pagination
+- Find narratives by user
+- Find narratives by community
+- Count narratives
+- Rebuild narratives
+
+#### Participations Application
+
+The participations application measures how strongly entities contribute to other entities.
+
+Responsibilities:
+
+- Access participation evidences
+- Find participation by identifier
+- Find participations by participant
+- Find participations by target
+- Find participation between two entities
+- Rebuild participations
+
+##### Participation Evidences Application
+
+The participation evidences application exposes evidence supporting participation calculations.
+
+Responsibilities:
+
+- Find evidence by identifier
+- Find evidence by participation
+- Find evidence by post
+- Find evidence by participant
+- Find evidence by target
+
+Evidence provides transparency and explainability for participation calculations.
+
+### Relationships Application
+
+The relationships application manages semantic relationships between entities.
+
+Responsibilities:
+
+- Access comparables
+- Build relationships
+- Synchronize relationships
+- Find relationships by identifier
+- Find relationships using index pagination
+- Find relationships using cursor pagination
+- Count relationships
+- Find relationships by source
+- Find relationships by target
+- Rebuild relationships
+
+#### Comparables Application
+
+The comparables application performs pairwise semantic comparison.
+
+Responsibilities:
+
+- Compare two comparable entities
+- Produce relationship results
+
+Comparables isolate similarity calculations from relationship orchestration.
+
+### Scores Application
+
+The scores application calculates trust and risk metrics.
+
+Responsibilities:
+
+- Calculate scores for a target
+- Retrieve latest scores
+- Retrieve score history
+- Recalculate all scores
+
+Multiple score calculators can be combined to produce trust and risk measurements.
+
+## Processing Pipeline
+
+When content enters the system:
+
+text Post  │  ▼ Save  │  ▼ Index Searchable Content  │  ▼ Rebuild Clusters  │  ▼ Rebuild Campaigns  │  ▼ Rebuild Topics  │  ▼ Rebuild Narratives  │  ▼ Rebuild Participations  │  ▼ Rebuild Relationships  │  ▼ Recalculate Scores 
+
+This process continuously updates the semantic graph as new content is ingested.
 
 ## Development
 
 ### Build and start all services
-```bash
+
 bash docker compose up --build 
-```
 
 ### Build and start all services in background
-```bash
+
 bash docker compose up -d --build 
-```
 
 ### View logs
-```bash
+
 bash docker compose logs -f 
-```
 
 ### Stop all services
-```bash
+
 bash docker compose down 
-```
 
 ## License
 
