@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/platforms"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/users"
 )
@@ -11,6 +12,7 @@ import (
 // Community represents a community
 type Community interface {
 	Identifier() uuid.UUID
+	ParticipationKind() participatables.Kind
 	Platform() platforms.Platform
 	Handle() string
 	Title() string

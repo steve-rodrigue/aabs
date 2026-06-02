@@ -4,12 +4,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/platforms"
 )
 
 // User represents a user
 type User interface {
 	Identifier() uuid.UUID
+	ParticipationKind() participatables.Kind
 	Platform() platforms.Platform
 	ExternalID() string
 	Handle() string

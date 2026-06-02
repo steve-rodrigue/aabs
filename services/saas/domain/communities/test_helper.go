@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/platforms"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/users"
 )
@@ -30,6 +31,10 @@ type MockCommunity struct {
 
 func (community *MockCommunity) Identifier() uuid.UUID {
 	return community.id
+}
+
+func (community *MockCommunity) ParticipationKind() participatables.Kind {
+	return participatables.CommunityKind
 }
 
 func (community *MockCommunity) Platform() platforms.Platform {
@@ -71,6 +76,12 @@ type MockCommunityRepository struct {
 
 	FindByHandleCalls int
 	FindByHandleErr   error
+}
+
+func NewMockCommunityRepository() *MockCommunityRepository {
+	return &MockCommunityRepository{
+		Items: map[uuid.UUID]Community{},
+	}
 }
 
 func (repository *MockCommunityRepository) Save(community Community) error {

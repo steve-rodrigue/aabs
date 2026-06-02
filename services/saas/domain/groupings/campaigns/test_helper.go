@@ -5,6 +5,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/posts"
 )
 
 func NewMockCampaign(
@@ -12,21 +14,41 @@ func NewMockCampaign(
 	description string,
 ) Campaign {
 	return &MockCampaign{
-		id:          uuid.New(),
-		name:        name,
-		description: description,
+		id:                uuid.New(),
+		participationKind: participatables.CampaignKind,
+		name:              name,
+		description:       description,
+	}
+}
+
+func NewMockCampaignClassifier() *MockCampaignClassifier {
+	return &MockCampaignClassifier{}
+}
+
+func NewMockCampaignRepository() *MockCampaignRepository {
+	return &MockCampaignRepository{
+		Items: map[uuid.UUID]Campaign{},
 	}
 }
 
 type MockCampaign struct {
-	id          uuid.UUID
+	id                uuid.UUID
+	participationKind participatables.Kind
+
 	name        string
 	description string
-	cluster     clusters.Cluster
+
+	cluster    clusters.Cluster
+	postCount  int
+	confidence float64
 }
 
 func (campaign *MockCampaign) Identifier() uuid.UUID {
 	return campaign.id
+}
+
+func (campaign *MockCampaign) ParticipationKind() participatables.Kind {
+	return campaign.participationKind
 }
 
 func (campaign *MockCampaign) Name() string {
@@ -42,11 +64,11 @@ func (campaign *MockCampaign) Cluster() clusters.Cluster {
 }
 
 func (campaign *MockCampaign) PostCount() int {
-	return 0
+	return campaign.postCount
 }
 
 func (campaign *MockCampaign) Confidence() float64 {
-	return 0
+	return campaign.confidence
 }
 
 func (campaign *MockCampaign) CreatedOn() time.Time {
@@ -64,15 +86,22 @@ type MockCampaignRepository struct {
 
 	FindByNameCalls int
 	FindByNameErr   error
+
+	FindAllCalls int
+	FindAllErr   error
 }
 
-func (repository *MockCampaignRepository) Save(campaign Campaign) error {
+func (repository *MockCampaignRepository) Save(
+	campaign Campaign,
+) error {
 	repository.SaveCalls++
 
 	return repository.SaveErr
 }
 
-func (repository *MockCampaignRepository) FindByID(id uuid.UUID) (Campaign, error) {
+func (repository *MockCampaignRepository) FindByID(
+	id uuid.UUID,
+) (Campaign, error) {
 	repository.FindByIDCalls++
 
 	if repository.FindByIDErr != nil {
@@ -82,7 +111,9 @@ func (repository *MockCampaignRepository) FindByID(id uuid.UUID) (Campaign, erro
 	return repository.Items[id], nil
 }
 
-func (repository *MockCampaignRepository) FindByName(name string) (Campaign, error) {
+func (repository *MockCampaignRepository) FindByName(
+	name string,
+) (Campaign, error) {
 	repository.FindByNameCalls++
 
 	if repository.FindByNameErr != nil {
@@ -96,4 +127,40 @@ func (repository *MockCampaignRepository) FindByName(name string) (Campaign, err
 	}
 
 	return nil, nil
+}
+
+func (repository *MockCampaignRepository) FindAll() (
+	[]Campaign,
+	error,
+) {
+	repository.FindAllCalls++
+
+	if repository.FindAllErr != nil {
+		return nil, repository.FindAllErr
+	}
+
+	out := make([]Campaign, 0, len(repository.Items))
+
+	for _, campaign := range repository.Items {
+		out = append(out, campaign)
+	}
+
+	return out, nil
+}
+
+type MockCampaignClassifier struct {
+	ClassifyCalls int
+	ClassifyErr   error
+	ClassifyValue Campaign
+
+	LastPost posts.Post
+}
+
+func (classifier *MockCampaignClassifier) Classify(
+	post posts.Post,
+) (Campaign, float64, error) {
+	classifier.ClassifyCalls++
+	classifier.LastPost = post
+
+	return classifier.ClassifyValue, 1.0, classifier.ClassifyErr
 }

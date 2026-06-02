@@ -14,6 +14,17 @@ func NewMockParticipation() Participation {
 	}
 }
 
+func NewMockParticipationBetween(
+	participant participatables.Participatable,
+	target participatables.Participatable,
+) Participation {
+	return &MockParticipation{
+		id:          uuid.New(),
+		participant: participant,
+		target:      target,
+	}
+}
+
 func NewMockParticipationRepository() *MockParticipationRepository {
 	return &MockParticipationRepository{}
 }

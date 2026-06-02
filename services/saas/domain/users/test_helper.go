@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/platforms"
 )
 
@@ -12,14 +13,23 @@ func NewMockUser(
 	displayName string,
 ) User {
 	return &MockUser{
-		id:          uuid.New(),
-		handle:      handle,
-		displayName: displayName,
+		id:                uuid.New(),
+		participationKind: participatables.UserKind,
+		handle:            handle,
+		displayName:       displayName,
+	}
+}
+
+func NewMockUserRepository() *MockUserRepository {
+	return &MockUserRepository{
+		Items: map[uuid.UUID]User{},
 	}
 }
 
 type MockUser struct {
-	id          uuid.UUID
+	id                uuid.UUID
+	participationKind participatables.Kind
+
 	platform    platforms.Platform
 	externalID  string
 	handle      string
@@ -29,6 +39,10 @@ type MockUser struct {
 
 func (user *MockUser) Identifier() uuid.UUID {
 	return user.id
+}
+
+func (user *MockUser) ParticipationKind() participatables.Kind {
+	return user.participationKind
 }
 
 func (user *MockUser) Platform() platforms.Platform {
@@ -71,13 +85,17 @@ type MockUserRepository struct {
 	FindByPlatformAndHandleErr   error
 }
 
-func (repository *MockUserRepository) Save(user User) error {
+func (repository *MockUserRepository) Save(
+	user User,
+) error {
 	repository.SaveCalls++
 
 	return repository.SaveErr
 }
 
-func (repository *MockUserRepository) FindByID(id uuid.UUID) (User, error) {
+func (repository *MockUserRepository) FindByID(
+	id uuid.UUID,
+) (User, error) {
 	repository.FindByIDCalls++
 
 	if repository.FindByIDErr != nil {
@@ -98,7 +116,8 @@ func (repository *MockUserRepository) FindByPlatformAndExternalID(
 	}
 
 	for _, user := range repository.Items {
-		if user.Platform() == platform && user.ExternalID() == externalID {
+		if user.Platform() == platform &&
+			user.ExternalID() == externalID {
 			return user, nil
 		}
 	}
@@ -117,7 +136,8 @@ func (repository *MockUserRepository) FindByPlatformAndHandle(
 	}
 
 	for _, user := range repository.Items {
-		if user.Platform() == platform && user.Handle() == handle {
+		if user.Platform() == platform &&
+			user.Handle() == handle {
 			return user, nil
 		}
 	}

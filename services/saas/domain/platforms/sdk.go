@@ -4,11 +4,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
 // Platform represents a website or app where users publish content
 type Platform interface {
 	Identifier() uuid.UUID
+	ParticipationKind() participatables.Kind
 	Name() string
 	Handle() string
 	BaseURL() string

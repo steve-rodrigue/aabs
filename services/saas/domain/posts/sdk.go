@@ -35,4 +35,5 @@ type Post interface {
 type Repository interface {
 	Save(post Post) error
 	FindByID(id uuid.UUID) (Post, error)
+	FindAll() ([]Post, error)
 }

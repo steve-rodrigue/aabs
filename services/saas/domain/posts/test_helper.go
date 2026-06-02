@@ -17,6 +17,12 @@ func NewMockPost(text string) Post {
 	}
 }
 
+func NewMockPostRepository() *MockPostRepository {
+	return &MockPostRepository{
+		Items: map[uuid.UUID]Post{},
+	}
+}
+
 type MockPost struct {
 	id      uuid.UUID
 	content contents.Content
@@ -50,6 +56,10 @@ type MockPostRepository struct {
 
 	FindByIDCalls int
 	FindByIDErr   error
+
+	FindAllCalls int
+	FindAllErr   error
+	FindAllValue []Post
 }
 
 func (repository *MockPostRepository) Save(post Post) error {
@@ -70,4 +80,24 @@ func (repository *MockPostRepository) FindByID(id uuid.UUID) (Post, error) {
 	}
 
 	return repository.Items[id], nil
+}
+
+func (repository *MockPostRepository) FindAll() ([]Post, error) {
+	repository.FindAllCalls++
+
+	if repository.FindAllErr != nil {
+		return nil, repository.FindAllErr
+	}
+
+	if repository.FindAllValue != nil {
+		return repository.FindAllValue, nil
+	}
+
+	out := make([]Post, 0, len(repository.Items))
+
+	for _, post := range repository.Items {
+		out = append(out, post)
+	}
+
+	return out, nil
 }
