@@ -1,6 +1,7 @@
 package users
 
 import (
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -79,10 +80,23 @@ type MockUserRepository struct {
 	FindByIDErr   error
 
 	FindByPlatformAndExternalIDCalls int
+	FindByPlatformAndExternalIDValue User
 	FindByPlatformAndExternalIDErr   error
 
 	FindByPlatformAndHandleCalls int
 	FindByPlatformAndHandleErr   error
+
+	FindCalls int
+	FindErr   error
+	FindValue []User
+
+	FindAfterCalls int
+	FindAfterErr   error
+	FindAfterValue []User
+
+	CountCalls int
+	CountErr   error
+	CountValue int64
 }
 
 func (repository *MockUserRepository) Save(
@@ -115,6 +129,10 @@ func (repository *MockUserRepository) FindByPlatformAndExternalID(
 		return nil, repository.FindByPlatformAndExternalIDErr
 	}
 
+	if repository.FindByPlatformAndExternalIDValue != nil {
+		return repository.FindByPlatformAndExternalIDValue, nil
+	}
+
 	for _, user := range repository.Items {
 		if user.Platform() == platform &&
 			user.ExternalID() == externalID {
@@ -143,4 +161,100 @@ func (repository *MockUserRepository) FindByPlatformAndHandle(
 	}
 
 	return nil, nil
+}
+
+func (repository *MockUserRepository) Find(
+	index int,
+	amount int,
+) ([]User, error) {
+	repository.FindCalls++
+
+	if repository.FindErr != nil {
+		return nil, repository.FindErr
+	}
+
+	if repository.FindValue != nil {
+		return repository.FindValue, nil
+	}
+
+	users := repository.sortedUsers()
+
+	if index >= len(users) {
+		return []User{}, nil
+	}
+
+	end := index + amount
+	if end > len(users) {
+		end = len(users)
+	}
+
+	return users[index:end], nil
+}
+
+func (repository *MockUserRepository) FindAfter(
+	cursor uuid.UUID,
+	amount int,
+) ([]User, error) {
+	repository.FindAfterCalls++
+
+	if repository.FindAfterErr != nil {
+		return nil, repository.FindAfterErr
+	}
+
+	if repository.FindAfterValue != nil {
+		return repository.FindAfterValue, nil
+	}
+
+	users := repository.sortedUsers()
+
+	start := 0
+
+	if cursor != uuid.Nil {
+		for index, user := range users {
+			if user.Identifier() == cursor {
+				start = index + 1
+				break
+			}
+		}
+	}
+
+	if start >= len(users) {
+		return []User{}, nil
+	}
+
+	end := start + amount
+	if end > len(users) {
+		end = len(users)
+	}
+
+	return users[start:end], nil
+}
+
+func (repository *MockUserRepository) Count() (int64, error) {
+	repository.CountCalls++
+
+	if repository.CountErr != nil {
+		return 0, repository.CountErr
+	}
+
+	if repository.CountValue != 0 {
+		return repository.CountValue, nil
+	}
+
+	return int64(len(repository.Items)), nil
+}
+
+func (repository *MockUserRepository) sortedUsers() []User {
+	users := make([]User, 0, len(repository.Items))
+
+	for _, user := range repository.Items {
+		users = append(users, user)
+	}
+
+	sort.Slice(users, func(left int, right int) bool {
+		return users[left].Identifier().String() <
+			users[right].Identifier().String()
+	})
+
+	return users
 }

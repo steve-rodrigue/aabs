@@ -23,7 +23,13 @@ type User interface {
 // Repository represents a user repository
 type Repository interface {
 	Save(user User) error
+
 	FindByID(id uuid.UUID) (User, error)
 	FindByPlatformAndExternalID(platform platforms.Platform, externalID string) (User, error)
 	FindByPlatformAndHandle(platform platforms.Platform, handle string) (User, error)
+
+	Find(index int, amount int) ([]User, error)
+	FindAfter(cursor uuid.UUID, amount int) ([]User, error)
+
+	Count() (int64, error)
 }
