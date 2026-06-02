@@ -25,6 +25,14 @@ type Community interface {
 // Repository represents a community repository
 type Repository interface {
 	Save(community Community) error
+
 	FindByID(id uuid.UUID) (Community, error)
-	FindByHandle(handle string) (Community, error)
+	FindByHandle(platform platforms.Platform, handle string) (Community, error)
+
+	Find(index int, amount int) ([]Community, error)
+	FindAfter(cursor uuid.UUID, amount int) ([]Community, error)
+
+	FindByPlatform(platform platforms.Platform) ([]Community, error)
+
+	Count() (int64, error)
 }
