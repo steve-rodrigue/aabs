@@ -17,9 +17,13 @@ type MockNarrativesApplication struct {
 	FindByIDErr   error
 	FindByIDValue domain_narratives.Narrative
 
-	FindAllCalls int
-	FindAllErr   error
-	FindAllValue []domain_narratives.Narrative
+	FindCalls int
+	FindErr   error
+	FindValue []domain_narratives.Narrative
+
+	FindAfterCalls int
+	FindAfterErr   error
+	FindAfterValue []domain_narratives.Narrative
 
 	FindNarrativesByUserCalls int
 	FindNarrativesByUserErr   error
@@ -28,6 +32,10 @@ type MockNarrativesApplication struct {
 	FindNarrativesByCommunityCalls int
 	FindNarrativesByCommunityErr   error
 	FindNarrativesByCommunityValue []domain_narratives.Narrative
+
+	CountCalls int
+	CountErr   error
+	CountValue int64
 
 	RebuildNarrativesCalls int
 	RebuildNarrativesErr   error
@@ -41,13 +49,22 @@ func (application *MockNarrativesApplication) FindByID(
 	return application.FindByIDValue, application.FindByIDErr
 }
 
-func (application *MockNarrativesApplication) FindAll() (
-	[]domain_narratives.Narrative,
-	error,
-) {
-	application.FindAllCalls++
+func (application *MockNarrativesApplication) Find(
+	index int,
+	amount int,
+) ([]domain_narratives.Narrative, error) {
+	application.FindCalls++
 
-	return application.FindAllValue, application.FindAllErr
+	return application.FindValue, application.FindErr
+}
+
+func (application *MockNarrativesApplication) FindAfter(
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_narratives.Narrative, error) {
+	application.FindAfterCalls++
+
+	return application.FindAfterValue, application.FindAfterErr
 }
 
 func (application *MockNarrativesApplication) FindNarrativesByUser(
@@ -55,7 +72,8 @@ func (application *MockNarrativesApplication) FindNarrativesByUser(
 ) ([]domain_narratives.Narrative, error) {
 	application.FindNarrativesByUserCalls++
 
-	return application.FindNarrativesByUserValue, application.FindNarrativesByUserErr
+	return application.FindNarrativesByUserValue,
+		application.FindNarrativesByUserErr
 }
 
 func (application *MockNarrativesApplication) FindNarrativesByCommunity(
@@ -63,7 +81,14 @@ func (application *MockNarrativesApplication) FindNarrativesByCommunity(
 ) ([]domain_narratives.Narrative, error) {
 	application.FindNarrativesByCommunityCalls++
 
-	return application.FindNarrativesByCommunityValue, application.FindNarrativesByCommunityErr
+	return application.FindNarrativesByCommunityValue,
+		application.FindNarrativesByCommunityErr
+}
+
+func (application *MockNarrativesApplication) Count() (int64, error) {
+	application.CountCalls++
+
+	return application.CountValue, application.CountErr
 }
 
 func (application *MockNarrativesApplication) RebuildNarratives() error {
