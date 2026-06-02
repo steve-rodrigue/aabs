@@ -17,9 +17,13 @@ type MockTopicsApplication struct {
 	FindByIDErr   error
 	FindByIDValue domain_topics.Topic
 
-	FindAllCalls int
-	FindAllErr   error
-	FindAllValue []domain_topics.Topic
+	FindCalls int
+	FindErr   error
+	FindValue []domain_topics.Topic
+
+	FindAfterCalls int
+	FindAfterErr   error
+	FindAfterValue []domain_topics.Topic
 
 	FindTopicsByUserCalls int
 	FindTopicsByUserErr   error
@@ -28,6 +32,10 @@ type MockTopicsApplication struct {
 	FindTopicsByCommunityCalls int
 	FindTopicsByCommunityErr   error
 	FindTopicsByCommunityValue []domain_topics.Topic
+
+	CountCalls int
+	CountErr   error
+	CountValue int64
 
 	RebuildTopicsCalls int
 	RebuildTopicsErr   error
@@ -41,13 +49,22 @@ func (application *MockTopicsApplication) FindByID(
 	return application.FindByIDValue, application.FindByIDErr
 }
 
-func (application *MockTopicsApplication) FindAll() (
-	[]domain_topics.Topic,
-	error,
-) {
-	application.FindAllCalls++
+func (application *MockTopicsApplication) Find(
+	index int,
+	amount int,
+) ([]domain_topics.Topic, error) {
+	application.FindCalls++
 
-	return application.FindAllValue, application.FindAllErr
+	return application.FindValue, application.FindErr
+}
+
+func (application *MockTopicsApplication) FindAfter(
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_topics.Topic, error) {
+	application.FindAfterCalls++
+
+	return application.FindAfterValue, application.FindAfterErr
 }
 
 func (application *MockTopicsApplication) FindTopicsByUser(
@@ -63,7 +80,14 @@ func (application *MockTopicsApplication) FindTopicsByCommunity(
 ) ([]domain_topics.Topic, error) {
 	application.FindTopicsByCommunityCalls++
 
-	return application.FindTopicsByCommunityValue, application.FindTopicsByCommunityErr
+	return application.FindTopicsByCommunityValue,
+		application.FindTopicsByCommunityErr
+}
+
+func (application *MockTopicsApplication) Count() (int64, error) {
+	application.CountCalls++
+
+	return application.CountValue, application.CountErr
 }
 
 func (application *MockTopicsApplication) RebuildTopics() error {
