@@ -50,7 +50,9 @@ The platform is built around a modular application layer where every feature is 
 
 The SaaS backend is organized into three primary layers.
 
-text Applications     |     v Domain     |     v Infrastructure 
+- Applications
+- Domain
+- Infrastructure 
 
 Applications orchestrate workflows.
 
