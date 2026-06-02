@@ -23,4 +23,5 @@ type Repository interface {
 	FindByID(id uuid.UUID) (Platform, error)
 	FindByHandle(handle string) (Platform, error)
 	FindByName(name string) (Platform, error)
+	FindAll() ([]Platform, error)
 }

@@ -69,6 +69,10 @@ type MockPlatformRepository struct {
 
 	FindByNameCalls int
 	FindByNameErr   error
+
+	FindAllCalls int
+	FindAllErr   error
+	FindAllValue []Platform
 }
 
 func (repository *MockPlatformRepository) Save(
@@ -125,4 +129,24 @@ func (repository *MockPlatformRepository) FindByName(
 	}
 
 	return nil, nil
+}
+
+func (repository *MockPlatformRepository) FindAll() ([]Platform, error) {
+	repository.FindAllCalls++
+
+	if repository.FindAllErr != nil {
+		return nil, repository.FindAllErr
+	}
+
+	if repository.FindAllValue != nil {
+		return repository.FindAllValue, nil
+	}
+
+	out := make([]Platform, 0, len(repository.Items))
+
+	for _, platform := range repository.Items {
+		out = append(out, platform)
+	}
+
+	return out, nil
 }
