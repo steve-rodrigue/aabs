@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/communities"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/platforms"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/posts/contents"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/users"
 )
@@ -36,4 +38,8 @@ type Repository interface {
 	Save(post Post) error
 	FindByID(id uuid.UUID) (Post, error)
 	FindAll() ([]Post, error)
+
+	FindByUser(user users.User) ([]Post, error)
+	FindByCommunity(community communities.Community) ([]Post, error)
+	FindByPlatform(platform platforms.Platform) ([]Post, error)
 }

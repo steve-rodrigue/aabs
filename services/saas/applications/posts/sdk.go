@@ -2,11 +2,19 @@ package posts
 
 import (
 	"github.com/google/uuid"
+
 	"github.com/steve-rodrigue/aabs/services/saas/domain/communities"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/platforms"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/users"
 )
+
+// New creates a new posts application
+func New(
+	repository domain_posts.Repository,
+) Application {
+	return createApplication(repository)
+}
 
 // Application represents the posts application
 type Application interface {
