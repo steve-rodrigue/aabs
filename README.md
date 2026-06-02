@@ -69,8 +69,24 @@ The infrastructure layer provides implementations such as databases, embedding e
 
 ### Application Graph
 
-text Application ├── Pipeline ├── Posts ├── Users ├── Communities ├── Platforms ├── Searches ├── Groupings │   ├── Clusters │   ├── Campaigns │   ├── Topics │   ├── Narratives │   └── Participations │       └── Evidences ├── Relationships │   └── Comparables └── Scores 
-
+- Application
+  - Pipeline
+  - Posts
+  - Users
+  - Communities
+  - Platforms
+  - Searches
+  - Groupings
+    - Clusters
+    - Campaigns
+    - Topics
+    - Narratives
+    - Participations
+      - Evidences
+  - Relationships
+    - Comparables
+  - Scores
+  
 Applications communicate through interfaces rather than concrete implementations.
 
 This keeps the system testable, modular, and independent from storage technologies.
