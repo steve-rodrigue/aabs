@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/steve-rodrigue/aabs/services/saas/domain/posts"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/posts"
 )
 
@@ -12,7 +11,7 @@ var errTest = errors.New("test error")
 
 func TestProcessPostSuccess(t *testing.T) {
 	fixture := newApplicationFixture()
-	post := posts.NewMockPost("hello world")
+	post := domain_posts.NewMockPost("hello world")
 
 	err := fixture.application.ProcessPost(post)
 
@@ -20,8 +19,8 @@ func TestProcessPostSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if fixture.postRepository.SaveCalls != 1 {
-		t.Fatalf("expected 1 post save, got %d", fixture.postRepository.SaveCalls)
+	if fixture.posts.SaveCalls != 1 {
+		t.Fatalf("expected 1 post save, got %d", fixture.posts.SaveCalls)
 	}
 
 	if fixture.searches.IndexPostCalls != 1 {
@@ -71,9 +70,9 @@ func TestProcessPostSuccess(t *testing.T) {
 
 func TestProcessPostReturnsSaveError(t *testing.T) {
 	fixture := newApplicationFixture()
-	fixture.postRepository.SaveErr = errTest
+	fixture.posts.SaveErr = errTest
 
-	err := fixture.application.ProcessPost(posts.NewMockPost("hello"))
+	err := fixture.application.ProcessPost(domain_posts.NewMockPost("hello"))
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected save error, got %v", err)
@@ -92,7 +91,7 @@ func TestProcessPostReturnsIndexPostError(t *testing.T) {
 	fixture := newApplicationFixture()
 	fixture.searches.IndexPostErr = errTest
 
-	err := fixture.application.ProcessPost(posts.NewMockPost("hello"))
+	err := fixture.application.ProcessPost(domain_posts.NewMockPost("hello"))
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected index post error, got %v", err)
@@ -115,7 +114,7 @@ func TestProcessPostReturnsSearchError(t *testing.T) {
 	fixture := newApplicationFixture()
 	fixture.searches.SearchPostsErr = errTest
 
-	err := fixture.application.ProcessPost(posts.NewMockPost("hello"))
+	err := fixture.application.ProcessPost(domain_posts.NewMockPost("hello"))
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected search error, got %v", err)
@@ -134,16 +133,16 @@ func TestProcessPostsSuccess(t *testing.T) {
 	fixture := newApplicationFixture()
 
 	err := fixture.application.ProcessPosts([]domain_posts.Post{
-		posts.NewMockPost("one"),
-		posts.NewMockPost("two"),
+		domain_posts.NewMockPost("one"),
+		domain_posts.NewMockPost("two"),
 	})
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if fixture.postRepository.SaveCalls != 2 {
-		t.Fatalf("expected 2 saves, got %d", fixture.postRepository.SaveCalls)
+	if fixture.posts.SaveCalls != 2 {
+		t.Fatalf("expected 2 saves, got %d", fixture.posts.SaveCalls)
 	}
 
 	if fixture.searches.SearchPostsCalls != 2 {
@@ -164,15 +163,15 @@ func TestProcessPostsStopsOnError(t *testing.T) {
 	fixture.searches.SearchPostsErr = errTest
 
 	err := fixture.application.ProcessPosts([]domain_posts.Post{
-		posts.NewMockPost("one"),
-		posts.NewMockPost("two"),
+		domain_posts.NewMockPost("one"),
+		domain_posts.NewMockPost("two"),
 	})
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected error, got %v", err)
 	}
 
-	if fixture.postRepository.SaveCalls != 1 {
+	if fixture.posts.SaveCalls != 1 {
 		t.Fatalf("expected processing to stop after first post")
 	}
 

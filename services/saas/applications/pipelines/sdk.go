@@ -2,6 +2,7 @@ package pipelines
 
 import (
 	"github.com/steve-rodrigue/aabs/services/saas/applications/groupings"
+	app_posts "github.com/steve-rodrigue/aabs/services/saas/applications/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/applications/relationships"
 	"github.com/steve-rodrigue/aabs/services/saas/applications/scores"
 	"github.com/steve-rodrigue/aabs/services/saas/applications/searches"
@@ -10,14 +11,14 @@ import (
 
 // New creates a new pipeline application
 func New(
-	postRepository posts.Repository,
+	posts app_posts.Application,
 	searches searches.Application,
 	groupings groupings.Application,
 	relationships relationships.Application,
 	scores scores.Application,
 ) Application {
 	return createApplication(
-		postRepository,
+		posts,
 		searches,
 		groupings,
 		relationships,

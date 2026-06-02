@@ -2,6 +2,7 @@ package pipelines
 
 import (
 	"github.com/steve-rodrigue/aabs/services/saas/applications/groupings"
+	app_posts "github.com/steve-rodrigue/aabs/services/saas/applications/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/applications/relationships"
 	"github.com/steve-rodrigue/aabs/services/saas/applications/scores"
 	"github.com/steve-rodrigue/aabs/services/saas/applications/searches"
@@ -9,7 +10,7 @@ import (
 )
 
 type application struct {
-	postRepository posts.Repository
+	posts app_posts.Application
 
 	searches searches.Application
 
@@ -19,26 +20,24 @@ type application struct {
 }
 
 func createApplication(
-	postRepository posts.Repository,
+	posts app_posts.Application,
 	searches searches.Application,
 	groupings groupings.Application,
 	relationships relationships.Application,
 	scores scores.Application,
 ) Application {
-	out := application{
-		postRepository: postRepository,
-		searches:       searches,
-		groupings:      groupings,
-		relationships:  relationships,
-		scores:         scores,
+	return &application{
+		posts:         posts,
+		searches:      searches,
+		groupings:     groupings,
+		relationships: relationships,
+		scores:        scores,
 	}
-
-	return &out
 }
 
 // ProcessPost processes a single post
 func (app *application) ProcessPost(post posts.Post) error {
-	if err := app.postRepository.Save(post); err != nil {
+	if err := app.posts.Save(post); err != nil {
 		return err
 	}
 
