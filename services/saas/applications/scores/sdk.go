@@ -11,11 +11,13 @@ func New(
 	repository domain_scores.Repository,
 	scorableRepository scorables.Repository,
 	calculators []domain_scores.Calculator,
+	recalculateBatchSize int,
 ) Application {
 	return createApplication(
 		repository,
 		scorableRepository,
 		calculators,
+		recalculateBatchSize,
 	)
 
 }

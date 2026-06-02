@@ -12,10 +12,11 @@ import (
 )
 
 type application struct {
-	repository     domain_topics.Repository
-	posts          app_posts.Application
-	participations app_participations.Application
-	builder        domain_topics.Builder
+	repository       domain_topics.Repository
+	posts            app_posts.Application
+	participations   app_participations.Application
+	builder          domain_topics.Builder
+	rebuildBatchSize int
 }
 
 func createApplication(
@@ -23,12 +24,14 @@ func createApplication(
 	posts app_posts.Application,
 	participations app_participations.Application,
 	builder domain_topics.Builder,
+	rebuildBatchSize int,
 ) Application {
 	return &application{
-		repository:     repository,
-		posts:          posts,
-		participations: participations,
-		builder:        builder,
+		repository:       repository,
+		posts:            posts,
+		participations:   participations,
+		builder:          builder,
+		rebuildBatchSize: rebuildBatchSize,
 	}
 }
 
@@ -87,21 +90,29 @@ func (app *application) Count() (int64, error) {
 }
 
 func (app *application) RebuildTopics() error {
-	posts, err := app.posts.FindAll()
-	if err != nil {
-		return err
-	}
+	cursor := uuid.Nil
 
-	topics, err := app.builder.Build(posts)
-	if err != nil {
-		return err
-	}
-
-	for _, topic := range topics {
-		if err := app.repository.Save(topic); err != nil {
+	for {
+		posts, err := app.posts.FindAfter(cursor, app.rebuildBatchSize)
+		if err != nil {
 			return err
 		}
-	}
 
-	return nil
+		if len(posts) == 0 {
+			return nil
+		}
+
+		topics, err := app.builder.Build(posts)
+		if err != nil {
+			return err
+		}
+
+		for _, topic := range topics {
+			if err := app.repository.Save(topic); err != nil {
+				return err
+			}
+		}
+
+		cursor = posts[len(posts)-1].Identifier()
+	}
 }

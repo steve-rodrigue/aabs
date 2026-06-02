@@ -41,9 +41,14 @@ type Campaign interface {
 // Repository represents a campaign repository
 type Repository interface {
 	Save(campaign Campaign) error
+
 	FindByID(id uuid.UUID) (Campaign, error)
 	FindByName(name string) (Campaign, error)
-	FindAll() ([]Campaign, error)
+
+	Find(index int, amount int) ([]Campaign, error)
+	FindAfter(cursor uuid.UUID, amount int) ([]Campaign, error)
+
+	Count() (int64, error)
 }
 
 // Classifier represents a campaign classifier

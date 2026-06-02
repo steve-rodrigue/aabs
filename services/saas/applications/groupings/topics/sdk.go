@@ -16,8 +16,9 @@ func New(
 	posts app_posts.Application,
 	participations app_participations.Application,
 	builder domain_topics.Builder,
+	rebuildBatchSize int,
 ) Application {
-	return createApplication(repository, posts, participations, builder)
+	return createApplication(repository, posts, participations, builder, rebuildBatchSize)
 }
 
 // Application represents a topic application

@@ -39,7 +39,23 @@ func (app *application) FindByHandle(
 	return app.repository.FindByHandle(handle)
 }
 
-// FindAll finds all platforms
-func (app *application) FindAll() ([]domain_platforms.Platform, error) {
-	return app.repository.FindAll()
+// Find finds platforms using offset pagination
+func (app *application) Find(
+	index int,
+	amount int,
+) ([]domain_platforms.Platform, error) {
+	return app.repository.Find(index, amount)
+}
+
+// FindAfter finds platforms using cursor pagination
+func (app *application) FindAfter(
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_platforms.Platform, error) {
+	return app.repository.FindAfter(cursor, amount)
+}
+
+// Count counts platforms
+func (app *application) Count() (int64, error) {
+	return app.repository.Count()
 }

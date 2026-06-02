@@ -36,8 +36,12 @@ type Post interface {
 // Repository represents a post repository
 type Repository interface {
 	Save(post Post) error
+
 	FindByID(id uuid.UUID) (Post, error)
-	FindAll() ([]Post, error)
+
+	Find(index int, amount int) ([]Post, error)
+	FindAfter(cursor uuid.UUID, amount int) ([]Post, error)
+	Count() (int64, error)
 
 	FindByUser(user users.User) ([]Post, error)
 	FindByCommunity(community communities.Community) ([]Post, error)

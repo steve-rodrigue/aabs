@@ -22,9 +22,17 @@ type MockPlatformsApplication struct {
 	FindByHandleErr   error
 	FindByHandleValue domain_platforms.Platform
 
-	FindAllCalls int
-	FindAllErr   error
-	FindAllValue []domain_platforms.Platform
+	FindCalls int
+	FindErr   error
+	FindValue []domain_platforms.Platform
+
+	FindAfterCalls int
+	FindAfterErr   error
+	FindAfterValue []domain_platforms.Platform
+
+	CountCalls int
+	CountErr   error
+	CountValue int64
 }
 
 func (application *MockPlatformsApplication) Save(
@@ -51,8 +59,26 @@ func (application *MockPlatformsApplication) FindByHandle(
 	return application.FindByHandleValue, application.FindByHandleErr
 }
 
-func (application *MockPlatformsApplication) FindAll() ([]domain_platforms.Platform, error) {
-	application.FindAllCalls++
+func (application *MockPlatformsApplication) Find(
+	index int,
+	amount int,
+) ([]domain_platforms.Platform, error) {
+	application.FindCalls++
 
-	return application.FindAllValue, application.FindAllErr
+	return application.FindValue, application.FindErr
+}
+
+func (application *MockPlatformsApplication) FindAfter(
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_platforms.Platform, error) {
+	application.FindAfterCalls++
+
+	return application.FindAfterValue, application.FindAfterErr
+}
+
+func (application *MockPlatformsApplication) Count() (int64, error) {
+	application.CountCalls++
+
+	return application.CountValue, application.CountErr
 }

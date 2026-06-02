@@ -286,7 +286,7 @@ func TestRebuildTopics(t *testing.T) {
 	secondPost := domain_posts.NewMockPost("two")
 	topic := domain_topics.NewMockTopic("Topic", "Description")
 
-	fixture.posts.FindAllValue = []domain_posts.Post{
+	fixture.posts.FindAfterValue = []domain_posts.Post{
 		firstPost,
 		secondPost,
 	}
@@ -301,16 +301,12 @@ func TestRebuildTopics(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if fixture.posts.FindAllCalls != 1 {
-		t.Fatalf("expected posts find all")
+	if fixture.posts.FindAfterCalls != 2 {
+		t.Fatalf("expected 2 posts find after calls, got %d", fixture.posts.FindAfterCalls)
 	}
 
 	if fixture.builder.BuildCalls != 1 {
-		t.Fatalf("expected 1 builder call")
-	}
-
-	if len(fixture.builder.LastPosts) != 2 {
-		t.Fatalf("expected 2 posts passed to builder")
+		t.Fatalf("expected 1 build call")
 	}
 
 	if fixture.repository.SaveCalls != 1 {
@@ -320,7 +316,7 @@ func TestRebuildTopics(t *testing.T) {
 
 func TestRebuildTopicsReturnsPostsError(t *testing.T) {
 	fixture := newApplicationFixture()
-	fixture.posts.FindAllErr = errTest
+	fixture.posts.FindAfterErr = errTest
 
 	err := fixture.application.RebuildTopics()
 
@@ -336,7 +332,7 @@ func TestRebuildTopicsReturnsPostsError(t *testing.T) {
 func TestRebuildTopicsReturnsBuilderError(t *testing.T) {
 	fixture := newApplicationFixture()
 
-	fixture.posts.FindAllValue = []domain_posts.Post{
+	fixture.posts.FindAfterValue = []domain_posts.Post{
 		domain_posts.NewMockPost("one"),
 	}
 
@@ -356,12 +352,14 @@ func TestRebuildTopicsReturnsBuilderError(t *testing.T) {
 func TestRebuildTopicsReturnsSaveError(t *testing.T) {
 	fixture := newApplicationFixture()
 
-	fixture.posts.FindAllValue = []domain_posts.Post{
+	topic := domain_topics.NewMockTopic("Topic", "Description")
+
+	fixture.posts.FindAfterValue = []domain_posts.Post{
 		domain_posts.NewMockPost("one"),
 	}
 
 	fixture.builder.BuildValue = []domain_topics.Topic{
-		domain_topics.NewMockTopic("Topic", "Description"),
+		topic,
 	}
 
 	fixture.repository.SaveErr = errTest

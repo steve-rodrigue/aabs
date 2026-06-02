@@ -20,8 +20,13 @@ type Platform interface {
 // Repository represents a platform repository
 type Repository interface {
 	Save(platform Platform) error
+
 	FindByID(id uuid.UUID) (Platform, error)
 	FindByHandle(handle string) (Platform, error)
 	FindByName(name string) (Platform, error)
-	FindAll() ([]Platform, error)
+
+	Find(index int, amount int) ([]Platform, error)
+	FindAfter(cursor uuid.UUID, amount int) ([]Platform, error)
+
+	Count() (int64, error)
 }

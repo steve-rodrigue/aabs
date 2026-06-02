@@ -84,7 +84,6 @@ type MockScoreRepository struct {
 
 func (repository *MockScoreRepository) Save(score Score) error {
 	repository.SaveCalls++
-
 	return repository.SaveErr
 }
 
@@ -127,7 +126,7 @@ func (repository *MockScoreRepository) FindLatestByTargetAndTypes(
 	return repository.FindLatestByTargetAndTypesValue, nil
 }
 
-type MockCalculator struct {
+type MockScoreCalculator struct {
 	CalculatorType Type
 
 	CalculateCalls int
@@ -135,19 +134,19 @@ type MockCalculator struct {
 	CalculateValue Score
 }
 
-func NewMockCalculator(
+func NewMockScoreCalculator(
 	scoreType Type,
-) *MockCalculator {
-	return &MockCalculator{
+) *MockScoreCalculator {
+	return &MockScoreCalculator{
 		CalculatorType: scoreType,
 	}
 }
 
-func (calculator *MockCalculator) Type() Type {
+func (calculator *MockScoreCalculator) Type() Type {
 	return calculator.CalculatorType
 }
 
-func (calculator *MockCalculator) Calculate(
+func (calculator *MockScoreCalculator) Calculate(
 	target scorables.Scorable,
 ) (Score, error) {
 	calculator.CalculateCalls++

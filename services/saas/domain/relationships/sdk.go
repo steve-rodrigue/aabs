@@ -21,12 +21,15 @@ type Relationship interface {
 	CreatedOn() time.Time
 }
 
-// Repository represents a relationshp repository
+// Repository represents a relationship repository
 type Repository interface {
-	FindByID(id uuid.UUID) (Relationship, error)
-	FindAll() ([]Relationship, error)
-
 	Save(relationship Relationship) error
+
+	FindByID(id uuid.UUID) (Relationship, error)
+
+	Find(index int, amount int) ([]Relationship, error)
+	FindAfter(cursor uuid.UUID, amount int) ([]Relationship, error)
+	Count() (int64, error)
 
 	FindBySourceID(source uuid.UUID) ([]Relationship, error)
 	FindByTargetID(target uuid.UUID) ([]Relationship, error)

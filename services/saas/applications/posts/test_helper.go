@@ -22,9 +22,17 @@ type MockPostsApplication struct {
 	FindByIDErr   error
 	FindByIDValue domain_posts.Post
 
-	FindAllCalls int
-	FindAllErr   error
-	FindAllValue []domain_posts.Post
+	FindCalls int
+	FindErr   error
+	FindValue []domain_posts.Post
+
+	FindAfterCalls int
+	FindAfterErr   error
+	FindAfterValue []domain_posts.Post
+
+	CountCalls int
+	CountErr   error
+	CountValue int64
 
 	FindByUserCalls int
 	FindByUserErr   error
@@ -56,10 +64,43 @@ func (application *MockPostsApplication) FindByID(
 	return application.FindByIDValue, application.FindByIDErr
 }
 
-func (application *MockPostsApplication) FindAll() ([]domain_posts.Post, error) {
-	application.FindAllCalls++
+func (application *MockPostsApplication) Find(
+	index int,
+	amount int,
+) ([]domain_posts.Post, error) {
+	application.FindCalls++
 
-	return application.FindAllValue, application.FindAllErr
+	return application.FindValue, application.FindErr
+}
+
+func (application *MockPostsApplication) FindAfter(
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_posts.Post, error) {
+	application.FindAfterCalls++
+
+	if application.FindAfterErr != nil {
+		return nil, application.FindAfterErr
+	}
+
+	if application.FindAfterValue != nil {
+		if application.FindAfterCalls == 1 {
+			return application.FindAfterValue, nil
+		}
+
+		return []domain_posts.Post{}, nil
+	}
+
+	return []domain_posts.Post{}, nil
+}
+
+func (application *MockPostsApplication) Count() (
+	int64,
+	error,
+) {
+	application.CountCalls++
+
+	return application.CountValue, application.CountErr
 }
 
 func (application *MockPostsApplication) FindByUser(

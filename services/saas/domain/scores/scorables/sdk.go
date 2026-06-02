@@ -34,6 +34,9 @@ type Scorable interface {
 
 // Repository represents a scorable repository
 type Repository interface {
-	FindAll() ([]Scorable, error)
+	Find(index int, amount int) ([]Scorable, error)
+	FindAfter(cursor uuid.UUID, amount int) ([]Scorable, error)
+	Count() (int64, error)
+
 	FindByID(id uuid.UUID) (Scorable, error)
 }

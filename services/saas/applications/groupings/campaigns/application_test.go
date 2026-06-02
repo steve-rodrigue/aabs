@@ -51,20 +51,22 @@ func TestFindByIDReturnsError(t *testing.T) {
 	}
 }
 
-func TestFindAll(t *testing.T) {
+func TestFind(t *testing.T) {
 	fixture := newApplicationFixture()
 
 	campaign := domain_campaigns.NewMockCampaign("Campaign", "Description")
-	fixture.repository.Items[campaign.Identifier()] = campaign
+	fixture.repository.FindValue = []domain_campaigns.Campaign{
+		campaign,
+	}
 
-	result, err := fixture.application.FindAll()
+	result, err := fixture.application.Find(0, 25)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if fixture.repository.FindAllCalls != 1 {
-		t.Fatalf("expected 1 find all call")
+	if fixture.repository.FindCalls != 1 {
+		t.Fatalf("expected 1 find call")
 	}
 
 	if len(result) != 1 || result[0] != campaign {
@@ -72,14 +74,80 @@ func TestFindAll(t *testing.T) {
 	}
 }
 
-func TestFindAllReturnsError(t *testing.T) {
+func TestFindReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
-	fixture.repository.FindAllErr = errTest
+	fixture.repository.FindErr = errTest
 
-	_, err := fixture.application.FindAll()
+	_, err := fixture.application.Find(0, 25)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected find all error, got %v", err)
+		t.Fatalf("expected find error, got %v", err)
+	}
+}
+
+func TestFindAfter(t *testing.T) {
+	fixture := newApplicationFixture()
+
+	cursor := uuid.New()
+	campaign := domain_campaigns.NewMockCampaign("Campaign", "Description")
+
+	fixture.repository.FindAfterValue = []domain_campaigns.Campaign{
+		campaign,
+	}
+
+	result, err := fixture.application.FindAfter(cursor, 25)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if fixture.repository.FindAfterCalls != 1 {
+		t.Fatalf("expected 1 find after call")
+	}
+
+	if len(result) != 1 || result[0] != campaign {
+		t.Fatalf("expected campaign result")
+	}
+}
+
+func TestFindAfterReturnsError(t *testing.T) {
+	fixture := newApplicationFixture()
+	fixture.repository.FindAfterErr = errTest
+
+	_, err := fixture.application.FindAfter(uuid.New(), 25)
+
+	if !errors.Is(err, errTest) {
+		t.Fatalf("expected find after error, got %v", err)
+	}
+}
+
+func TestCount(t *testing.T) {
+	fixture := newApplicationFixture()
+	fixture.repository.CountValue = 123
+
+	result, err := fixture.application.Count()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if fixture.repository.CountCalls != 1 {
+		t.Fatalf("expected 1 count call")
+	}
+
+	if result != 123 {
+		t.Fatalf("expected count 123, got %d", result)
+	}
+}
+
+func TestCountReturnsError(t *testing.T) {
+	fixture := newApplicationFixture()
+	fixture.repository.CountErr = errTest
+
+	_, err := fixture.application.Count()
+
+	if !errors.Is(err, errTest) {
+		t.Fatalf("expected count error, got %v", err)
 	}
 }
 
@@ -252,7 +320,7 @@ func TestRebuildCampaigns(t *testing.T) {
 	secondPost := domain_posts.NewMockPost("two")
 	campaign := domain_campaigns.NewMockCampaign("Campaign", "Description")
 
-	fixture.posts.FindAllValue = []domain_posts.Post{
+	fixture.posts.FindAfterValue = []domain_posts.Post{
 		firstPost,
 		secondPost,
 	}
@@ -265,8 +333,8 @@ func TestRebuildCampaigns(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if fixture.posts.FindAllCalls != 1 {
-		t.Fatalf("expected posts find all")
+	if fixture.posts.FindAfterCalls != 2 {
+		t.Fatalf("expected 2 posts find after calls, got %d", fixture.posts.FindAfterCalls)
 	}
 
 	if fixture.classifier.ClassifyCalls != 2 {
@@ -280,7 +348,7 @@ func TestRebuildCampaigns(t *testing.T) {
 
 func TestRebuildCampaignsReturnsPostsError(t *testing.T) {
 	fixture := newApplicationFixture()
-	fixture.posts.FindAllErr = errTest
+	fixture.posts.FindAfterErr = errTest
 
 	err := fixture.application.RebuildCampaigns()
 
@@ -296,7 +364,7 @@ func TestRebuildCampaignsReturnsPostsError(t *testing.T) {
 func TestRebuildCampaignsReturnsClassifierError(t *testing.T) {
 	fixture := newApplicationFixture()
 
-	fixture.posts.FindAllValue = []domain_posts.Post{
+	fixture.posts.FindAfterValue = []domain_posts.Post{
 		domain_posts.NewMockPost("one"),
 	}
 
@@ -316,7 +384,7 @@ func TestRebuildCampaignsReturnsClassifierError(t *testing.T) {
 func TestRebuildCampaignsReturnsSaveError(t *testing.T) {
 	fixture := newApplicationFixture()
 
-	fixture.posts.FindAllValue = []domain_posts.Post{
+	fixture.posts.FindAfterValue = []domain_posts.Post{
 		domain_posts.NewMockPost("one"),
 	}
 

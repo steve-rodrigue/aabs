@@ -20,5 +20,8 @@ type Application interface {
 	FindByID(id uuid.UUID) (domain_platforms.Platform, error)
 	FindByHandle(handle string) (domain_platforms.Platform, error)
 
-	FindAll() ([]domain_platforms.Platform, error)
+	Find(index int, amount int) ([]domain_platforms.Platform, error)
+	FindAfter(cursor uuid.UUID, amount int) ([]domain_platforms.Platform, error)
+
+	Count() (int64, error)
 }

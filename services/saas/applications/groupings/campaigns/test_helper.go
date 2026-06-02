@@ -18,9 +18,13 @@ type MockCampaignsApplication struct {
 	FindByIDErr   error
 	FindByIDValue domain_campaigns.Campaign
 
-	FindAllCalls int
-	FindAllErr   error
-	FindAllValue []domain_campaigns.Campaign
+	FindCalls int
+	FindErr   error
+	FindValue []domain_campaigns.Campaign
+
+	FindAfterCalls int
+	FindAfterErr   error
+	FindAfterValue []domain_campaigns.Campaign
 
 	FindCampaignsByUserCalls int
 	FindCampaignsByUserErr   error
@@ -34,6 +38,10 @@ type MockCampaignsApplication struct {
 	FindCampaignsByPlatformErr   error
 	FindCampaignsByPlatformValue []domain_campaigns.Campaign
 
+	CountCalls int
+	CountErr   error
+	CountValue int64
+
 	RebuildCampaignsCalls int
 	RebuildCampaignsErr   error
 }
@@ -46,13 +54,22 @@ func (application *MockCampaignsApplication) FindByID(
 	return application.FindByIDValue, application.FindByIDErr
 }
 
-func (application *MockCampaignsApplication) FindAll() (
-	[]domain_campaigns.Campaign,
-	error,
-) {
-	application.FindAllCalls++
+func (application *MockCampaignsApplication) Find(
+	index int,
+	amount int,
+) ([]domain_campaigns.Campaign, error) {
+	application.FindCalls++
 
-	return application.FindAllValue, application.FindAllErr
+	return application.FindValue, application.FindErr
+}
+
+func (application *MockCampaignsApplication) FindAfter(
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_campaigns.Campaign, error) {
+	application.FindAfterCalls++
+
+	return application.FindAfterValue, application.FindAfterErr
 }
 
 func (application *MockCampaignsApplication) FindCampaignsByUser(
@@ -77,6 +94,12 @@ func (application *MockCampaignsApplication) FindCampaignsByPlatform(
 	application.FindCampaignsByPlatformCalls++
 
 	return application.FindCampaignsByPlatformValue, application.FindCampaignsByPlatformErr
+}
+
+func (application *MockCampaignsApplication) Count() (int64, error) {
+	application.CountCalls++
+
+	return application.CountValue, application.CountErr
 }
 
 func (application *MockCampaignsApplication) RebuildCampaigns() error {

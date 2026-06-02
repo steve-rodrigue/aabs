@@ -18,5 +18,11 @@ type Relatable interface {
 }
 
 type Repository interface {
-	FindAll() ([]Relatable, error)
+	Find(index int, amount int) ([]Relatable, error)
+	FindAfter(cursor uuid.UUID, amount int) ([]Relatable, error)
+	Count() (int64, error)
+}
+
+type CandidateRepository interface {
+	FindCandidates(source Relatable, amount int) ([]Relatable, error)
 }

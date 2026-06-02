@@ -21,40 +21,48 @@ func createApplication(
 	}
 }
 
-// Save saves a post
 func (app *application) Save(
 	post domain_posts.Post,
 ) error {
 	return app.repository.Save(post)
 }
 
-// FindByID finds a post by id
 func (app *application) FindByID(
 	id uuid.UUID,
 ) (domain_posts.Post, error) {
 	return app.repository.FindByID(id)
 }
 
-// FindAll finds all posts
-func (app *application) FindAll() ([]domain_posts.Post, error) {
-	return app.repository.FindAll()
+func (app *application) Find(
+	index int,
+	amount int,
+) ([]domain_posts.Post, error) {
+	return app.repository.Find(index, amount)
 }
 
-// FindByUser finds posts by user
+func (app *application) FindAfter(
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_posts.Post, error) {
+	return app.repository.FindAfter(cursor, amount)
+}
+
+func (app *application) Count() (int64, error) {
+	return app.repository.Count()
+}
+
 func (app *application) FindByUser(
 	user users.User,
 ) ([]domain_posts.Post, error) {
 	return app.repository.FindByUser(user)
 }
 
-// FindByCommunity finds posts by community
 func (app *application) FindByCommunity(
 	community communities.Community,
 ) ([]domain_posts.Post, error) {
 	return app.repository.FindByCommunity(community)
 }
 
-// FindByPlatform finds posts by platform
 func (app *application) FindByPlatform(
 	platform platforms.Platform,
 ) ([]domain_posts.Post, error) {

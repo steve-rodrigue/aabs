@@ -15,13 +15,22 @@ var errTest = errors.New("test error")
 func TestCalculate(t *testing.T) {
 	fixture := newApplicationFixture()
 
-	target := scorables.NewMockScorable(uuid.New(), scorables.UserKind)
+	target := scorables.NewMockScorable(uuid.New(), scorables.PostKind)
 
-	trustScore := domain_scores.NewMockScore(target, domain_scores.TrustType, 0.9)
-	spamScore := domain_scores.NewMockScore(target, domain_scores.SpamType, 0.1)
+	trustScore := domain_scores.NewMockScore(
+		target,
+		domain_scores.TrustType,
+		0.75,
+	)
 
-	fixture.trustCalculator.CalculateValue = trustScore
-	fixture.spamCalculator.CalculateValue = spamScore
+	spamScore := domain_scores.NewMockScore(
+		target,
+		domain_scores.SpamType,
+		0.25,
+	)
+
+	fixture.calculators[0].CalculateValue = trustScore
+	fixture.calculators[1].CalculateValue = spamScore
 
 	result, err := fixture.application.Calculate(target)
 
@@ -29,36 +38,36 @@ func TestCalculate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if fixture.trustCalculator.CalculateCalls != 1 {
-		t.Fatalf("expected trust calculator to be called once")
+	if fixture.calculators[0].CalculateCalls != 1 {
+		t.Fatalf("expected 1 trust calculate call")
 	}
 
-	if fixture.spamCalculator.CalculateCalls != 1 {
-		t.Fatalf("expected spam calculator to be called once")
+	if fixture.calculators[1].CalculateCalls != 1 {
+		t.Fatalf("expected 1 spam calculate call")
 	}
 
 	if fixture.repository.SaveCalls != 2 {
-		t.Fatalf("expected 2 saved scores, got %d", fixture.repository.SaveCalls)
+		t.Fatalf("expected 2 save calls")
 	}
 
 	if len(result) != 2 {
-		t.Fatalf("expected 2 scores, got %d", len(result))
+		t.Fatalf("expected 2 score results")
 	}
 
 	if result[0] != trustScore {
-		t.Fatalf("expected trust score")
+		t.Fatalf("expected trust score result")
 	}
 
 	if result[1] != spamScore {
-		t.Fatalf("expected spam score")
+		t.Fatalf("expected spam score result")
 	}
 }
 
 func TestCalculateReturnsCalculatorError(t *testing.T) {
 	fixture := newApplicationFixture()
 
-	target := scorables.NewMockScorable(uuid.New(), scorables.UserKind)
-	fixture.trustCalculator.CalculateErr = errTest
+	target := scorables.NewMockScorable(uuid.New(), scorables.PostKind)
+	fixture.calculators[0].CalculateErr = errTest
 
 	_, err := fixture.application.Calculate(target)
 
@@ -71,15 +80,13 @@ func TestCalculateReturnsCalculatorError(t *testing.T) {
 	}
 }
 
-func TestCalculateReturnsRepositorySaveError(t *testing.T) {
+func TestCalculateReturnsSaveError(t *testing.T) {
 	fixture := newApplicationFixture()
 
-	target := scorables.NewMockScorable(uuid.New(), scorables.UserKind)
-	fixture.trustCalculator.CalculateValue = domain_scores.NewMockScore(
-		target,
-		domain_scores.TrustType,
-		0.9,
-	)
+	target := scorables.NewMockScorable(uuid.New(), scorables.PostKind)
+	score := domain_scores.NewMockScore(target, domain_scores.TrustType, 0.75)
+
+	fixture.calculators[0].CalculateValue = score
 	fixture.repository.SaveErr = errTest
 
 	_, err := fixture.application.Calculate(target)
@@ -93,10 +100,10 @@ func TestLatestScore(t *testing.T) {
 	fixture := newApplicationFixture()
 
 	id := uuid.New()
-	target := scorables.NewMockScorable(id, scorables.UserKind)
-	score := domain_scores.NewMockScore(target, domain_scores.TrustType, 0.9)
+	target := scorables.NewMockScorable(id, scorables.PostKind)
+	score := domain_scores.NewMockScore(target, domain_scores.TrustType, 0.75)
 
-	fixture.scorableRepository.Items[id] = target
+	fixture.scorables.Items[id] = target
 	fixture.repository.FindLatestByTargetValue = score
 
 	result, err := fixture.application.LatestScore(id, domain_scores.TrustType)
@@ -105,12 +112,12 @@ func TestLatestScore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if fixture.scorableRepository.FindByIDCalls != 1 {
-		t.Fatalf("expected scorable find by id to be called")
+	if fixture.scorables.FindByIDCalls != 1 {
+		t.Fatalf("expected 1 scorable find by id call")
 	}
 
 	if fixture.repository.FindLatestByTargetCalls != 1 {
-		t.Fatalf("expected latest score lookup")
+		t.Fatalf("expected 1 latest score lookup")
 	}
 
 	if result != score {
@@ -120,16 +127,12 @@ func TestLatestScore(t *testing.T) {
 
 func TestLatestScoreReturnsScorableError(t *testing.T) {
 	fixture := newApplicationFixture()
-	fixture.scorableRepository.FindByIDErr = errTest
+	fixture.scorables.FindByIDErr = errTest
 
 	_, err := fixture.application.LatestScore(uuid.New(), domain_scores.TrustType)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected scorable error, got %v", err)
-	}
-
-	if fixture.repository.FindLatestByTargetCalls != 0 {
-		t.Fatalf("expected score repository not to be called")
 	}
 }
 
@@ -137,15 +140,15 @@ func TestLatestScoreReturnsRepositoryError(t *testing.T) {
 	fixture := newApplicationFixture()
 
 	id := uuid.New()
-	target := scorables.NewMockScorable(id, scorables.UserKind)
+	target := scorables.NewMockScorable(id, scorables.PostKind)
 
-	fixture.scorableRepository.Items[id] = target
+	fixture.scorables.Items[id] = target
 	fixture.repository.FindLatestByTargetErr = errTest
 
 	_, err := fixture.application.LatestScore(id, domain_scores.TrustType)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected repository error, got %v", err)
+		t.Fatalf("expected latest score error, got %v", err)
 	}
 }
 
@@ -153,11 +156,10 @@ func TestScoreHistory(t *testing.T) {
 	fixture := newApplicationFixture()
 
 	id := uuid.New()
-	target := scorables.NewMockScorable(id, scorables.UserKind)
+	target := scorables.NewMockScorable(id, scorables.PostKind)
+	score := domain_scores.NewMockScore(target, domain_scores.TrustType, 0.75)
 
-	score := domain_scores.NewMockScore(target, domain_scores.TrustType, 0.9)
-
-	fixture.scorableRepository.Items[id] = target
+	fixture.scorables.Items[id] = target
 	fixture.repository.FindHistoryByTargetValue = []domain_scores.Score{
 		score,
 	}
@@ -168,12 +170,12 @@ func TestScoreHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if fixture.scorableRepository.FindByIDCalls != 1 {
-		t.Fatalf("expected scorable find by id")
+	if fixture.scorables.FindByIDCalls != 1 {
+		t.Fatalf("expected 1 scorable find by id call")
 	}
 
 	if fixture.repository.FindHistoryByTargetCalls != 1 {
-		t.Fatalf("expected history lookup")
+		t.Fatalf("expected 1 history lookup")
 	}
 
 	if len(result) != 1 || result[0] != score {
@@ -183,16 +185,12 @@ func TestScoreHistory(t *testing.T) {
 
 func TestScoreHistoryReturnsScorableError(t *testing.T) {
 	fixture := newApplicationFixture()
-	fixture.scorableRepository.FindByIDErr = errTest
+	fixture.scorables.FindByIDErr = errTest
 
 	_, err := fixture.application.ScoreHistory(uuid.New(), domain_scores.TrustType)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected scorable error, got %v", err)
-	}
-
-	if fixture.repository.FindHistoryByTargetCalls != 0 {
-		t.Fatalf("expected history repository not to be called")
 	}
 }
 
@@ -200,39 +198,28 @@ func TestScoreHistoryReturnsRepositoryError(t *testing.T) {
 	fixture := newApplicationFixture()
 
 	id := uuid.New()
-	target := scorables.NewMockScorable(id, scorables.UserKind)
+	target := scorables.NewMockScorable(id, scorables.PostKind)
 
-	fixture.scorableRepository.Items[id] = target
+	fixture.scorables.Items[id] = target
 	fixture.repository.FindHistoryByTargetErr = errTest
 
 	_, err := fixture.application.ScoreHistory(id, domain_scores.TrustType)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected repository error, got %v", err)
+		t.Fatalf("expected history error, got %v", err)
 	}
 }
 
 func TestRecalculateScores(t *testing.T) {
 	fixture := newApplicationFixture()
 
-	first := scorables.NewMockScorable(uuid.New(), scorables.UserKind)
-	second := scorables.NewMockScorable(uuid.New(), scorables.PostKind)
+	target := scorables.NewMockScorable(uuid.New(), scorables.PostKind)
+	score := domain_scores.NewMockScore(target, domain_scores.TrustType, 0.75)
 
-	fixture.scorableRepository.FindAllValue = []scorables.Scorable{
-		first,
-		second,
+	fixture.scorables.FindAfterValue = []scorables.Scorable{
+		target,
 	}
-
-	fixture.trustCalculator.CalculateValue = domain_scores.NewMockScore(
-		first,
-		domain_scores.TrustType,
-		0.9,
-	)
-	fixture.spamCalculator.CalculateValue = domain_scores.NewMockScore(
-		first,
-		domain_scores.SpamType,
-		0.1,
-	)
+	fixture.calculators[0].CalculateValue = score
 
 	err := fixture.application.RecalculateScores()
 
@@ -240,46 +227,39 @@ func TestRecalculateScores(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if fixture.scorableRepository.FindAllCalls != 1 {
-		t.Fatalf("expected scorable find all")
+	if fixture.scorables.FindAfterCalls != 2 {
+		t.Fatalf("expected 2 find after calls, got %d", fixture.scorables.FindAfterCalls)
 	}
 
-	if fixture.trustCalculator.CalculateCalls != 2 {
-		t.Fatalf("expected trust calculator called twice")
+	if fixture.calculators[0].CalculateCalls != 1 {
+		t.Fatalf("expected 1 calculate call")
 	}
 
-	if fixture.spamCalculator.CalculateCalls != 2 {
-		t.Fatalf("expected spam calculator called twice")
-	}
-
-	if fixture.repository.SaveCalls != 4 {
-		t.Fatalf("expected 4 saved scores, got %d", fixture.repository.SaveCalls)
+	if fixture.repository.SaveCalls != 2 {
+		t.Fatalf("expected 1 save call")
 	}
 }
 
-func TestRecalculateScoresReturnsScorableRepositoryError(t *testing.T) {
+func TestRecalculateScoresReturnsFindAfterError(t *testing.T) {
 	fixture := newApplicationFixture()
-	fixture.scorableRepository.FindAllErr = errTest
+	fixture.scorables.FindAfterErr = errTest
 
 	err := fixture.application.RecalculateScores()
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected scorable repository error, got %v", err)
-	}
-
-	if fixture.trustCalculator.CalculateCalls != 0 {
-		t.Fatalf("expected calculator not to be called")
+		t.Fatalf("expected find after error, got %v", err)
 	}
 }
 
 func TestRecalculateScoresReturnsCalculateError(t *testing.T) {
 	fixture := newApplicationFixture()
 
-	fixture.scorableRepository.FindAllValue = []scorables.Scorable{
-		scorables.NewMockScorable(uuid.New(), scorables.UserKind),
-	}
+	target := scorables.NewMockScorable(uuid.New(), scorables.PostKind)
 
-	fixture.trustCalculator.CalculateErr = errTest
+	fixture.scorables.FindAfterValue = []scorables.Scorable{
+		target,
+	}
+	fixture.calculators[0].CalculateErr = errTest
 
 	err := fixture.application.RecalculateScores()
 

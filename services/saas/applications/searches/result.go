@@ -18,6 +18,10 @@ func (result *result) Kind() ResultKind {
 	return result.kind
 }
 
+func (result *result) HasTitle() bool {
+	return result.title != ""
+}
+
 func (result *result) Title() string {
 	return result.title
 }

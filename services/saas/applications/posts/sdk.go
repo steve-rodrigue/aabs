@@ -21,7 +21,11 @@ type Application interface {
 	Save(post domain_posts.Post) error
 
 	FindByID(id uuid.UUID) (domain_posts.Post, error)
-	FindAll() ([]domain_posts.Post, error)
+
+	Find(index int, amount int) ([]domain_posts.Post, error)
+	FindAfter(cursor uuid.UUID, amount int) ([]domain_posts.Post, error)
+
+	Count() (int64, error)
 
 	FindByUser(user users.User) ([]domain_posts.Post, error)
 	FindByCommunity(community communities.Community) ([]domain_posts.Post, error)

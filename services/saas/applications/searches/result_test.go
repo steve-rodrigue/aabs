@@ -25,6 +25,10 @@ func TestResult(t *testing.T) {
 		t.Fatalf("expected kind %s, got %s", PostKind, result.Kind())
 	}
 
+	if !result.HasTitle() {
+		t.Fatalf("expected title to be present")
+	}
+
 	if result.Title() != "Post" {
 		t.Fatalf("expected title %q, got %q", "Post", result.Title())
 	}
@@ -35,5 +39,27 @@ func TestResult(t *testing.T) {
 
 	if result.Score() != 0.95 {
 		t.Fatalf("expected score %.2f, got %.2f", 0.95, result.Score())
+	}
+}
+
+func TestResultWithoutTitle(t *testing.T) {
+	result := &result{
+		identifier: uuid.New(),
+		kind:       PostKind,
+		title:      "",
+		text:       "reply text",
+		score:      0.80,
+	}
+
+	if result.HasTitle() {
+		t.Fatalf("expected title to be absent")
+	}
+
+	if result.Title() != "" {
+		t.Fatalf("expected empty title")
+	}
+
+	if result.Text() != "reply text" {
+		t.Fatalf("expected text %q, got %q", "reply text", result.Text())
 	}
 }

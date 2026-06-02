@@ -8,24 +8,26 @@ import (
 )
 
 type application struct {
-	repository         domain_scores.Repository
-	scorableRepository scorables.Repository
-	calculators        []domain_scores.Calculator
+	repository           domain_scores.Repository
+	scorableRepository   scorables.Repository
+	calculators          []domain_scores.Calculator
+	recalculateBatchSize int
 }
 
 func createApplication(
 	repository domain_scores.Repository,
 	scorableRepository scorables.Repository,
 	calculators []domain_scores.Calculator,
+	recalculateBatchSize int,
 ) Application {
 	return &application{
-		repository:         repository,
-		scorableRepository: scorableRepository,
-		calculators:        calculators,
+		repository:           repository,
+		scorableRepository:   scorableRepository,
+		calculators:          calculators,
+		recalculateBatchSize: recalculateBatchSize,
 	}
 }
 
-// Calculate calculates all scores for a target
 func (app *application) Calculate(
 	target scorables.Scorable,
 ) ([]domain_scores.Score, error) {
@@ -47,7 +49,6 @@ func (app *application) Calculate(
 	return out, nil
 }
 
-// LatestScore finds the latest score for a target
 func (app *application) LatestScore(
 	id uuid.UUID,
 	scoreType domain_scores.Type,
@@ -63,7 +64,6 @@ func (app *application) LatestScore(
 	)
 }
 
-// ScoreHistory finds score history for a target
 func (app *application) ScoreHistory(
 	id uuid.UUID,
 	scoreType domain_scores.Type,
@@ -79,18 +79,28 @@ func (app *application) ScoreHistory(
 	)
 }
 
-// RecalculateScores recalculates scores for all scorable entities
 func (app *application) RecalculateScores() error {
-	targets, err := app.scorableRepository.FindAll()
-	if err != nil {
-		return err
-	}
+	cursor := uuid.Nil
 
-	for _, target := range targets {
-		if _, err := app.Calculate(target); err != nil {
+	for {
+		targets, err := app.scorableRepository.FindAfter(
+			cursor,
+			app.recalculateBatchSize,
+		)
+		if err != nil {
 			return err
 		}
-	}
 
-	return nil
+		if len(targets) == 0 {
+			return nil
+		}
+
+		for _, target := range targets {
+			if _, err := app.Calculate(target); err != nil {
+				return err
+			}
+		}
+
+		cursor = targets[len(targets)-1].Identifier()
+	}
 }

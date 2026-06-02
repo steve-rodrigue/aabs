@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/posts"
+	domain_searches "github.com/steve-rodrigue/aabs/services/saas/domain/searches"
 )
 
 var errTest = errors.New("test error")
@@ -23,20 +24,12 @@ func TestProcessPostSuccess(t *testing.T) {
 		t.Fatalf("expected 1 post save, got %d", fixture.posts.SaveCalls)
 	}
 
-	if fixture.searches.IndexPostCalls != 1 {
-		t.Fatalf("expected 1 index post call, got %d", fixture.searches.IndexPostCalls)
+	if fixture.searches.IndexCalls != 0 {
+		t.Fatalf("expected search index not to be called")
 	}
 
-	if fixture.searches.LastPost != post {
-		t.Fatalf("expected indexed post to be the processed post")
-	}
-
-	if fixture.searches.SearchPostsCalls != 1 {
-		t.Fatalf("expected 1 search posts call, got %d", fixture.searches.SearchPostsCalls)
-	}
-
-	if fixture.searches.LastQuery != "hello world" {
-		t.Fatalf("expected search query %q, got %q", "hello world", fixture.searches.LastQuery)
+	if fixture.searches.SearchCalls != 0 {
+		t.Fatalf("expected search not to be called")
 	}
 
 	if fixture.clusters.RebuildPostClustersCalls != 1 {
@@ -78,30 +71,11 @@ func TestProcessPostReturnsSaveError(t *testing.T) {
 		t.Fatalf("expected save error, got %v", err)
 	}
 
-	if fixture.searches.IndexPostCalls != 0 {
-		t.Fatalf("expected index post not to be called")
+	if fixture.searches.IndexCalls != 0 {
+		t.Fatalf("expected index not to be called")
 	}
 
-	if fixture.searches.SearchPostsCalls != 0 {
-		t.Fatalf("expected search not to be called")
-	}
-}
-
-func TestProcessPostReturnsIndexPostError(t *testing.T) {
-	fixture := newApplicationFixture()
-	fixture.searches.IndexPostErr = errTest
-
-	err := fixture.application.ProcessPost(domain_posts.NewMockPost("hello"))
-
-	if !errors.Is(err, errTest) {
-		t.Fatalf("expected index post error, got %v", err)
-	}
-
-	if fixture.searches.IndexPostCalls != 1 {
-		t.Fatalf("expected 1 index post call, got %d", fixture.searches.IndexPostCalls)
-	}
-
-	if fixture.searches.SearchPostsCalls != 0 {
+	if fixture.searches.SearchCalls != 0 {
 		t.Fatalf("expected search not to be called")
 	}
 
@@ -110,22 +84,56 @@ func TestProcessPostReturnsIndexPostError(t *testing.T) {
 	}
 }
 
-func TestProcessPostReturnsSearchError(t *testing.T) {
+func TestProcessPostIndexesSearchablePost(t *testing.T) {
 	fixture := newApplicationFixture()
-	fixture.searches.SearchPostsErr = errTest
 
-	err := fixture.application.ProcessPost(domain_posts.NewMockPost("hello"))
+	post := &mockSearchablePost{
+		Post: domain_posts.NewMockPost("hello world"),
+	}
+
+	err := fixture.application.ProcessPost(post)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if fixture.posts.SaveCalls != 1 {
+		t.Fatalf("expected 1 post save")
+	}
+
+	if fixture.searches.IndexCalls != 1 {
+		t.Fatalf("expected 1 index call")
+	}
+
+	if fixture.searches.LastIndexed != post {
+		t.Fatalf("expected indexed searchable post")
+	}
+
+	if fixture.clusters.RebuildPostClustersCalls != 1 {
+		t.Fatalf("expected rebuild to be called")
+	}
+}
+
+func TestProcessPostReturnsIndexError(t *testing.T) {
+	fixture := newApplicationFixture()
+	fixture.searches.IndexErr = errTest
+
+	post := &mockSearchablePost{
+		Post: domain_posts.NewMockPost("hello world"),
+	}
+
+	err := fixture.application.ProcessPost(post)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected search error, got %v", err)
+		t.Fatalf("expected index error, got %v", err)
+	}
+
+	if fixture.searches.IndexCalls != 1 {
+		t.Fatalf("expected 1 index call")
 	}
 
 	if fixture.clusters.RebuildPostClustersCalls != 0 {
 		t.Fatalf("expected rebuild not to be called")
-	}
-
-	if fixture.searches.IndexPostCalls != 1 {
-		t.Fatalf("expected index post to be called before search")
 	}
 }
 
@@ -145,22 +153,23 @@ func TestProcessPostsSuccess(t *testing.T) {
 		t.Fatalf("expected 2 saves, got %d", fixture.posts.SaveCalls)
 	}
 
-	if fixture.searches.SearchPostsCalls != 2 {
-		t.Fatalf("expected 2 search calls, got %d", fixture.searches.SearchPostsCalls)
+	if fixture.searches.IndexCalls != 0 {
+		t.Fatalf("expected no index calls")
+	}
+
+	if fixture.searches.SearchCalls != 0 {
+		t.Fatalf("expected no search calls")
 	}
 
 	if fixture.clusters.RebuildPostClustersCalls != 2 {
 		t.Fatalf("expected 2 rebuilds, got %d", fixture.clusters.RebuildPostClustersCalls)
 	}
-
-	if fixture.searches.IndexPostCalls != 2 {
-		t.Fatalf("expected 2 index post calls, got %d", fixture.searches.IndexPostCalls)
-	}
 }
 
-func TestProcessPostsStopsOnError(t *testing.T) {
+func TestProcessPostsStopsOnProcessPostError(t *testing.T) {
 	fixture := newApplicationFixture()
-	fixture.searches.SearchPostsErr = errTest
+
+	fixture.posts.SaveErr = errTest
 
 	err := fixture.application.ProcessPosts([]domain_posts.Post{
 		domain_posts.NewMockPost("one"),
@@ -175,8 +184,8 @@ func TestProcessPostsStopsOnError(t *testing.T) {
 		t.Fatalf("expected processing to stop after first post")
 	}
 
-	if fixture.searches.IndexPostCalls != 1 {
-		t.Fatalf("expected 1 index post call, got %d", fixture.searches.IndexPostCalls)
+	if fixture.clusters.RebuildPostClustersCalls != 0 {
+		t.Fatalf("expected rebuild not to be called")
 	}
 }
 
@@ -241,4 +250,24 @@ func TestRebuildReturnsErrors(t *testing.T) {
 			}
 		})
 	}
+}
+
+type mockSearchablePost struct {
+	domain_posts.Post
+}
+
+func (post *mockSearchablePost) SearchKind() domain_searches.Kind {
+	return domain_searches.PostKind
+}
+
+func (post *mockSearchablePost) SearchTitle() string {
+	if post.Content().IsThread() {
+		return post.Content().Thread().Title()
+	}
+
+	return ""
+}
+
+func (post *mockSearchablePost) SearchText() string {
+	return post.Content().Text()
 }

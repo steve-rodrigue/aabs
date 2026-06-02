@@ -26,6 +26,7 @@ func newApplicationFixture() *applicationFixture {
 		posts,
 		participations,
 		classifier,
+		25,
 	)
 
 	return &applicationFixture{

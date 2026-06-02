@@ -7,6 +7,7 @@ import (
 	"github.com/steve-rodrigue/aabs/services/saas/applications/scores"
 	"github.com/steve-rodrigue/aabs/services/saas/applications/searches"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/posts"
+	domain_searches "github.com/steve-rodrigue/aabs/services/saas/domain/searches"
 )
 
 type application struct {
@@ -41,13 +42,11 @@ func (app *application) ProcessPost(post posts.Post) error {
 		return err
 	}
 
-	if err := app.searches.IndexPost(post); err != nil {
-		return err
-	}
-
-	text := post.Content().Text()
-	if _, err := app.searches.SearchPosts(text, 50); err != nil {
-		return err
+	searchable, ok := post.(domain_searches.Searchable)
+	if ok {
+		if err := app.searches.Index(searchable); err != nil {
+			return err
+		}
 	}
 
 	return app.Rebuild()

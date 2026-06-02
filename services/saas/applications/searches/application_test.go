@@ -5,23 +5,23 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/communities"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/campaigns"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/narratives"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/topics"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/posts"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships"
+
 	domain_searches "github.com/steve-rodrigue/aabs/services/saas/domain/searches"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/users"
 )
 
 var errTest = errors.New("test error")
 
-func TestIndexPostSuccess(t *testing.T) {
+func TestIndex(t *testing.T) {
 	fixture := newFixture()
-	post := posts.NewMockPost("hello")
 
-	err := fixture.app.IndexPost(post)
+	searchable := domain_searches.NewMockSearchable(
+		uuid.New(),
+		domain_searches.PostKind,
+		"",
+		"hello world",
+	)
+
+	err := fixture.app.Index(searchable)
 
 	if err != nil {
 		t.Fatal(err)
@@ -31,31 +31,38 @@ func TestIndexPostSuccess(t *testing.T) {
 		t.Fatalf("expected 1 embed call")
 	}
 
-	if fixture.embedder.LastText != "hello" {
-		t.Fatalf("expected text %q, got %q", "hello", fixture.embedder.LastText)
-	}
-
 	if fixture.searchRepository.StoreCalls != 1 {
 		t.Fatalf("expected 1 store call")
 	}
 
-	if fixture.searchRepository.LastStoredTarget != post.Identifier() {
-		t.Fatalf("expected stored target to be post id")
+	if fixture.searchRepository.LastStoredTarget != searchable.Identifier() {
+		t.Fatalf("expected stored target")
 	}
 
 	if fixture.searchRepository.LastStoredKind != domain_searches.PostKind {
-		t.Fatalf("expected stored kind post")
+		t.Fatalf("expected stored kind")
+	}
+
+	if len(fixture.searchRepository.LastStoredVector) != 3 {
+		t.Fatalf("expected stored vector")
 	}
 }
 
-func TestIndexPostReturnsEmbedError(t *testing.T) {
+func TestIndexReturnsEmbedderError(t *testing.T) {
 	fixture := newFixture()
 	fixture.embedder.EmbedErr = errTest
 
-	err := fixture.app.IndexPost(posts.NewMockPost("hello"))
+	searchable := domain_searches.NewMockSearchable(
+		uuid.New(),
+		domain_searches.PostKind,
+		"",
+		"hello world",
+	)
+
+	err := fixture.app.Index(searchable)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected embed error, got %v", err)
+		t.Fatalf("expected embedder error, got %v", err)
 	}
 
 	if fixture.searchRepository.StoreCalls != 0 {
@@ -63,77 +70,154 @@ func TestIndexPostReturnsEmbedError(t *testing.T) {
 	}
 }
 
-func TestIndexPostReturnsStoreError(t *testing.T) {
+func TestIndexReturnsStoreError(t *testing.T) {
 	fixture := newFixture()
 	fixture.searchRepository.StoreErr = errTest
 
-	err := fixture.app.IndexPost(posts.NewMockPost("hello"))
+	searchable := domain_searches.NewMockSearchable(
+		uuid.New(),
+		domain_searches.PostKind,
+		"",
+		"hello world",
+	)
+
+	err := fixture.app.Index(searchable)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected store error, got %v", err)
 	}
 }
 
-func TestSearchReturnsMixedResults(t *testing.T) {
+func TestSearch(t *testing.T) {
 	fixture := newFixture()
 
-	post := posts.NewMockPost("post text")
-	campaign := campaigns.NewMockCampaign("Campaign", "Campaign description")
-	topic := topics.NewMockTopic("Topic", "Topic description")
-	narrative := narratives.NewMockNarrative("Narrative", "Narrative description")
-	user := users.NewMockUser("@user", "User Display")
-	community := communities.NewMockCommunity("Community", "Community text")
-	relationship := relationships.NewMockRelationship()
+	id := uuid.New()
 
-	fixture.posts.Items[post.Identifier()] = post
-	fixture.campaigns.Items[campaign.Identifier()] = campaign
-	fixture.topics.Items[topic.Identifier()] = topic
-	fixture.narratives.Items[narrative.Identifier()] = narrative
-	fixture.users.Items[user.Identifier()] = user
-	fixture.communities.Items[community.Identifier()] = community
-	fixture.relationships.Items[relationship.Identifier()] = relationship
+	searchable := domain_searches.NewMockSearchable(
+		id,
+		domain_searches.PostKind,
+		"",
+		"reply text",
+	)
+
+	fixture.searchableRepository.Items[id] = searchable
 
 	fixture.searchRepository.Matches = []domain_searches.Match{
-		domain_searches.NewMockMatch(post.Identifier(), domain_searches.PostKind, 0.91),
-		domain_searches.NewMockMatch(campaign.Identifier(), domain_searches.CampaignKind, 0.82),
-		domain_searches.NewMockMatch(topic.Identifier(), domain_searches.TopicKind, 0.73),
-		domain_searches.NewMockMatch(narrative.Identifier(), domain_searches.NarrativeKind, 0.64),
-		domain_searches.NewMockMatch(user.Identifier(), domain_searches.UserKind, 0.55),
-		domain_searches.NewMockMatch(community.Identifier(), domain_searches.CommunityKind, 0.46),
-		domain_searches.NewMockMatch(relationship.Identifier(), domain_searches.RelationshipKind, 0.37),
+		domain_searches.NewMockMatch(
+			id,
+			domain_searches.PostKind,
+			0.95,
+		),
 	}
 
-	results, err := fixture.app.Search("hello", 10)
+	result, err := fixture.app.Search("hello", 10)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if len(results) != 7 {
-		t.Fatalf("expected 7 results, got %d", len(results))
+	if fixture.embedder.EmbedCalls != 1 {
+		t.Fatalf("expected 1 embed call")
 	}
 
-	assertResult(t, results[0], post.Identifier(), PostKind, "Post", "post text", 0.91)
-	assertResult(t, results[1], campaign.Identifier(), CampaignKind, "Campaign", "Campaign description", 0.82)
-	assertResult(t, results[2], topic.Identifier(), TopicKind, "Topic", "Topic description", 0.73)
-	assertResult(t, results[3], narrative.Identifier(), NarrativeKind, "Narrative", "Narrative description", 0.64)
-	assertResult(t, results[4], user.Identifier(), UserKind, "@user", "User Display", 0.55)
-	assertResult(t, results[5], community.Identifier(), CommunityKind, "Community", "Community text", 0.46)
-	assertResult(t, results[6], relationship.Identifier(), RelationshipKind, "Relationship", "", 0.37)
+	if fixture.searchRepository.SearchCalls != 1 {
+		t.Fatalf("expected 1 search call")
+	}
+
+	if fixture.searchableRepository.FindByIDCalls != 1 {
+		t.Fatalf("expected 1 searchable lookup")
+	}
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 result")
+	}
+
+	if result[0].Identifier() != id {
+		t.Fatalf("expected result identifier")
+	}
+
+	if result[0].Kind() != PostKind {
+		t.Fatalf("expected post result kind")
+	}
+
+	if result[0].HasTitle() {
+		t.Fatalf("expected result without title")
+	}
+
+	if result[0].Title() != "" {
+		t.Fatalf("expected empty title")
+	}
+
+	if result[0].Text() != "reply text" {
+		t.Fatalf("expected result text")
+	}
+
+	if result[0].Score() != 0.95 {
+		t.Fatalf("expected result score")
+	}
 }
 
-func TestSearchReturnsEmbedError(t *testing.T) {
+func TestSearchWithTitle(t *testing.T) {
+	fixture := newFixture()
+
+	id := uuid.New()
+
+	searchable := domain_searches.NewMockSearchable(
+		id,
+		domain_searches.PostKind,
+		"Thread title",
+		"thread text",
+	)
+
+	fixture.searchableRepository.Items[id] = searchable
+
+	fixture.searchRepository.Matches = []domain_searches.Match{
+		domain_searches.NewMockMatch(
+			id,
+			domain_searches.PostKind,
+			0.90,
+		),
+	}
+
+	result, err := fixture.app.Search("thread", 10)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 result")
+	}
+
+	if !result[0].HasTitle() {
+		t.Fatalf("expected result with title")
+	}
+
+	if result[0].Title() != "Thread title" {
+		t.Fatalf("expected thread title")
+	}
+
+	if result[0].Text() != "thread text" {
+		t.Fatalf("expected thread text")
+	}
+}
+
+func TestSearchReturnsEmbedderError(t *testing.T) {
 	fixture := newFixture()
 	fixture.embedder.EmbedErr = errTest
 
 	_, err := fixture.app.Search("hello", 10)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected embed error, got %v", err)
+		t.Fatalf("expected embedder error, got %v", err)
+	}
+
+	if fixture.searchRepository.SearchCalls != 0 {
+		t.Fatalf("expected search not to be called")
 	}
 }
 
-func TestSearchReturnsRepositorySearchError(t *testing.T) {
+func TestSearchReturnsSearchRepositoryError(t *testing.T) {
 	fixture := newFixture()
 	fixture.searchRepository.SearchErr = errTest
 
@@ -144,174 +228,38 @@ func TestSearchReturnsRepositorySearchError(t *testing.T) {
 	}
 }
 
-func TestSearchPosts(t *testing.T) {
+func TestSearchReturnsSearchableRepositoryError(t *testing.T) {
 	fixture := newFixture()
-	post := posts.NewMockPost("post")
 
-	fixture.posts.Items[post.Identifier()] = post
+	id := uuid.New()
+
 	fixture.searchRepository.Matches = []domain_searches.Match{
-		domain_searches.NewMockMatch(post.Identifier(), domain_searches.PostKind, 0.9),
+		domain_searches.NewMockMatch(
+			id,
+			domain_searches.PostKind,
+			0.95,
+		),
 	}
 
-	results, err := fixture.app.SearchPosts("query", 10)
+	fixture.searchableRepository.FindByIDErr = errTest
+
+	_, err := fixture.app.Search("hello", 10)
+
+	if !errors.Is(err, errTest) {
+		t.Fatalf("expected searchable repository error, got %v", err)
+	}
+}
+
+func TestSearchEmpty(t *testing.T) {
+	fixture := newFixture()
+
+	result, err := fixture.app.Search("nothing", 10)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if len(results) != 1 || results[0] != post {
-		t.Fatalf("expected post result")
-	}
-}
-
-func TestSearchCampaigns(t *testing.T) {
-	fixture := newFixture()
-	campaign := campaigns.NewMockCampaign("Campaign", "Description")
-
-	fixture.campaigns.Items[campaign.Identifier()] = campaign
-	fixture.searchRepository.Matches = []domain_searches.Match{
-		domain_searches.NewMockMatch(campaign.Identifier(), domain_searches.CampaignKind, 0.9),
-	}
-
-	results, err := fixture.app.SearchCampaigns("query", 10)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(results) != 1 || results[0] != campaign {
-		t.Fatalf("expected campaign result")
-	}
-}
-
-func TestSearchTopics(t *testing.T) {
-	fixture := newFixture()
-	topic := topics.NewMockTopic("Topic", "Description")
-
-	fixture.topics.Items[topic.Identifier()] = topic
-	fixture.searchRepository.Matches = []domain_searches.Match{
-		domain_searches.NewMockMatch(topic.Identifier(), domain_searches.TopicKind, 0.9),
-	}
-
-	results, err := fixture.app.SearchTopics("query", 10)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(results) != 1 || results[0] != topic {
-		t.Fatalf("expected topic result")
-	}
-}
-
-func TestSearchNarratives(t *testing.T) {
-	fixture := newFixture()
-	narrative := narratives.NewMockNarrative("Narrative", "Description")
-
-	fixture.narratives.Items[narrative.Identifier()] = narrative
-	fixture.searchRepository.Matches = []domain_searches.Match{
-		domain_searches.NewMockMatch(narrative.Identifier(), domain_searches.NarrativeKind, 0.9),
-	}
-
-	results, err := fixture.app.SearchNarratives("query", 10)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(results) != 1 || results[0] != narrative {
-		t.Fatalf("expected narrative result")
-	}
-}
-
-func TestSearchUsers(t *testing.T) {
-	fixture := newFixture()
-	user := users.NewMockUser("@user", "Display")
-
-	fixture.users.Items[user.Identifier()] = user
-	fixture.searchRepository.Matches = []domain_searches.Match{
-		domain_searches.NewMockMatch(user.Identifier(), domain_searches.UserKind, 0.9),
-	}
-
-	results, err := fixture.app.SearchUsers("query", 10)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(results) != 1 || results[0] != user {
-		t.Fatalf("expected user result")
-	}
-}
-
-func TestSearchCommunities(t *testing.T) {
-	fixture := newFixture()
-	community := communities.NewMockCommunity("Community", "Text")
-
-	fixture.communities.Items[community.Identifier()] = community
-	fixture.searchRepository.Matches = []domain_searches.Match{
-		domain_searches.NewMockMatch(community.Identifier(), domain_searches.CommunityKind, 0.9),
-	}
-
-	results, err := fixture.app.SearchCommunities("query", 10)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(results) != 1 || results[0] != community {
-		t.Fatalf("expected community result")
-	}
-}
-
-func TestSearchRelationships(t *testing.T) {
-	fixture := newFixture()
-	relationship := relationships.NewMockRelationship()
-
-	fixture.relationships.Items[relationship.Identifier()] = relationship
-	fixture.searchRepository.Matches = []domain_searches.Match{
-		domain_searches.NewMockMatch(relationship.Identifier(), domain_searches.RelationshipKind, 0.9),
-	}
-
-	results, err := fixture.app.SearchRelationships("query", 10)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(results) != 1 || results[0] != relationship {
-		t.Fatalf("expected relationship result")
-	}
-}
-
-func assertResult(
-	t *testing.T,
-	result Result,
-	id uuid.UUID,
-	kind ResultKind,
-	title string,
-	text string,
-	score float64,
-) {
-	t.Helper()
-
-	if result.Identifier() != id {
-		t.Fatalf("expected id %s, got %s", id, result.Identifier())
-	}
-
-	if result.Kind() != kind {
-		t.Fatalf("expected kind %s, got %s", kind, result.Kind())
-	}
-
-	if result.Title() != title {
-		t.Fatalf("expected title %q, got %q", title, result.Title())
-	}
-
-	if result.Text() != text {
-		t.Fatalf("expected text %q, got %q", text, result.Text())
-	}
-
-	if result.Score() != score {
-		t.Fatalf("expected score %f, got %f", score, result.Score())
+	if len(result) != 0 {
+		t.Fatalf("expected no results")
 	}
 }

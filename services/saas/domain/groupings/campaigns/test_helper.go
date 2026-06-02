@@ -1,6 +1,7 @@
 package campaigns
 
 import (
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -86,9 +87,19 @@ type MockCampaignRepository struct {
 
 	FindByNameCalls int
 	FindByNameErr   error
+	FindByNameValue Campaign
 
-	FindAllCalls int
-	FindAllErr   error
+	FindCalls int
+	FindErr   error
+	FindValue []Campaign
+
+	FindAfterCalls int
+	FindAfterErr   error
+	FindAfterValue []Campaign
+
+	CountCalls int
+	CountErr   error
+	CountValue int64
 }
 
 func (repository *MockCampaignRepository) Save(
@@ -120,6 +131,10 @@ func (repository *MockCampaignRepository) FindByName(
 		return nil, repository.FindByNameErr
 	}
 
+	if repository.FindByNameValue != nil {
+		return repository.FindByNameValue, nil
+	}
+
 	for _, campaign := range repository.Items {
 		if campaign.Name() == name {
 			return campaign, nil
@@ -129,23 +144,100 @@ func (repository *MockCampaignRepository) FindByName(
 	return nil, nil
 }
 
-func (repository *MockCampaignRepository) FindAll() (
-	[]Campaign,
-	error,
-) {
-	repository.FindAllCalls++
+func (repository *MockCampaignRepository) Find(
+	index int,
+	amount int,
+) ([]Campaign, error) {
+	repository.FindCalls++
 
-	if repository.FindAllErr != nil {
-		return nil, repository.FindAllErr
+	if repository.FindErr != nil {
+		return nil, repository.FindErr
 	}
 
+	if repository.FindValue != nil {
+		return repository.FindValue, nil
+	}
+
+	items := repository.sortedCampaigns()
+
+	if index >= len(items) {
+		return []Campaign{}, nil
+	}
+
+	end := index + amount
+	if end > len(items) {
+		end = len(items)
+	}
+
+	return items[index:end], nil
+}
+
+func (repository *MockCampaignRepository) FindAfter(
+	cursor uuid.UUID,
+	amount int,
+) ([]Campaign, error) {
+	repository.FindAfterCalls++
+
+	if repository.FindAfterErr != nil {
+		return nil, repository.FindAfterErr
+	}
+
+	if repository.FindAfterValue != nil {
+		return repository.FindAfterValue, nil
+	}
+
+	items := repository.sortedCampaigns()
+
+	start := 0
+
+	if cursor != uuid.Nil {
+		for index, campaign := range items {
+			if campaign.Identifier() == cursor {
+				start = index + 1
+				break
+			}
+		}
+	}
+
+	if start >= len(items) {
+		return []Campaign{}, nil
+	}
+
+	end := start + amount
+	if end > len(items) {
+		end = len(items)
+	}
+
+	return items[start:end], nil
+}
+
+func (repository *MockCampaignRepository) Count() (int64, error) {
+	repository.CountCalls++
+
+	if repository.CountErr != nil {
+		return 0, repository.CountErr
+	}
+
+	if repository.CountValue != 0 {
+		return repository.CountValue, nil
+	}
+
+	return int64(len(repository.Items)), nil
+}
+
+func (repository *MockCampaignRepository) sortedCampaigns() []Campaign {
 	out := make([]Campaign, 0, len(repository.Items))
 
 	for _, campaign := range repository.Items {
 		out = append(out, campaign)
 	}
 
-	return out, nil
+	sort.Slice(out, func(left int, right int) bool {
+		return out[left].Identifier().String() <
+			out[right].Identifier().String()
+	})
+
+	return out
 }
 
 type MockCampaignClassifier struct {

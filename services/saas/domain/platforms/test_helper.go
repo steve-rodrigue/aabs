@@ -1,6 +1,7 @@
 package platforms
 
 import (
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -66,13 +67,23 @@ type MockPlatformRepository struct {
 
 	FindByHandleCalls int
 	FindByHandleErr   error
+	FindByHandleValue Platform
 
 	FindByNameCalls int
 	FindByNameErr   error
+	FindByNameValue Platform
 
-	FindAllCalls int
-	FindAllErr   error
-	FindAllValue []Platform
+	FindCalls int
+	FindErr   error
+	FindValue []Platform
+
+	FindAfterCalls int
+	FindAfterErr   error
+	FindAfterValue []Platform
+
+	CountCalls int
+	CountErr   error
+	CountValue int64
 }
 
 func (repository *MockPlatformRepository) Save(
@@ -104,6 +115,10 @@ func (repository *MockPlatformRepository) FindByHandle(
 		return nil, repository.FindByHandleErr
 	}
 
+	if repository.FindByHandleValue != nil {
+		return repository.FindByHandleValue, nil
+	}
+
 	for _, platform := range repository.Items {
 		if platform.Handle() == handle {
 			return platform, nil
@@ -122,6 +137,10 @@ func (repository *MockPlatformRepository) FindByName(
 		return nil, repository.FindByNameErr
 	}
 
+	if repository.FindByNameValue != nil {
+		return repository.FindByNameValue, nil
+	}
+
 	for _, platform := range repository.Items {
 		if platform.Name() == name {
 			return platform, nil
@@ -131,22 +150,98 @@ func (repository *MockPlatformRepository) FindByName(
 	return nil, nil
 }
 
-func (repository *MockPlatformRepository) FindAll() ([]Platform, error) {
-	repository.FindAllCalls++
+func (repository *MockPlatformRepository) Find(
+	index int,
+	amount int,
+) ([]Platform, error) {
+	repository.FindCalls++
 
-	if repository.FindAllErr != nil {
-		return nil, repository.FindAllErr
+	if repository.FindErr != nil {
+		return nil, repository.FindErr
 	}
 
-	if repository.FindAllValue != nil {
-		return repository.FindAllValue, nil
+	if repository.FindValue != nil {
+		return repository.FindValue, nil
 	}
 
+	items := repository.sortedPlatforms()
+
+	if index >= len(items) {
+		return []Platform{}, nil
+	}
+
+	end := index + amount
+	if end > len(items) {
+		end = len(items)
+	}
+
+	return items[index:end], nil
+}
+
+func (repository *MockPlatformRepository) FindAfter(
+	cursor uuid.UUID,
+	amount int,
+) ([]Platform, error) {
+	repository.FindAfterCalls++
+
+	if repository.FindAfterErr != nil {
+		return nil, repository.FindAfterErr
+	}
+
+	if repository.FindAfterValue != nil {
+		return repository.FindAfterValue, nil
+	}
+
+	items := repository.sortedPlatforms()
+
+	start := 0
+
+	if cursor != uuid.Nil {
+		for index, platform := range items {
+			if platform.Identifier() == cursor {
+				start = index + 1
+				break
+			}
+		}
+	}
+
+	if start >= len(items) {
+		return []Platform{}, nil
+	}
+
+	end := start + amount
+	if end > len(items) {
+		end = len(items)
+	}
+
+	return items[start:end], nil
+}
+
+func (repository *MockPlatformRepository) Count() (int64, error) {
+	repository.CountCalls++
+
+	if repository.CountErr != nil {
+		return 0, repository.CountErr
+	}
+
+	if repository.CountValue != 0 {
+		return repository.CountValue, nil
+	}
+
+	return int64(len(repository.Items)), nil
+}
+
+func (repository *MockPlatformRepository) sortedPlatforms() []Platform {
 	out := make([]Platform, 0, len(repository.Items))
 
 	for _, platform := range repository.Items {
 		out = append(out, platform)
 	}
 
-	return out, nil
+	sort.Slice(out, func(left int, right int) bool {
+		return out[left].Identifier().String() <
+			out[right].Identifier().String()
+	})
+
+	return out
 }

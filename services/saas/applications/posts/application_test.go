@@ -74,20 +74,22 @@ func TestFindByIDReturnsError(t *testing.T) {
 	}
 }
 
-func TestFindAll(t *testing.T) {
+func TestFind(t *testing.T) {
 	fixture := newApplicationFixture()
 
 	post := domain_posts.NewMockPost("hello")
-	fixture.repository.Items[post.Identifier()] = post
+	fixture.repository.FindValue = []domain_posts.Post{
+		post,
+	}
 
-	result, err := fixture.application.FindAll()
+	result, err := fixture.application.Find(0, 25)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if fixture.repository.FindAllCalls != 1 {
-		t.Fatalf("expected 1 find all call")
+	if fixture.repository.FindCalls != 1 {
+		t.Fatalf("expected 1 find call")
 	}
 
 	if len(result) != 1 || result[0] != post {
@@ -95,14 +97,80 @@ func TestFindAll(t *testing.T) {
 	}
 }
 
-func TestFindAllReturnsError(t *testing.T) {
+func TestFindReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
-	fixture.repository.FindAllErr = errTest
+	fixture.repository.FindErr = errTest
 
-	_, err := fixture.application.FindAll()
+	_, err := fixture.application.Find(0, 25)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected find all error, got %v", err)
+		t.Fatalf("expected find error, got %v", err)
+	}
+}
+
+func TestFindAfter(t *testing.T) {
+	fixture := newApplicationFixture()
+
+	cursor := uuid.New()
+	post := domain_posts.NewMockPost("hello")
+
+	fixture.repository.FindAfterValue = []domain_posts.Post{
+		post,
+	}
+
+	result, err := fixture.application.FindAfter(cursor, 25)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if fixture.repository.FindAfterCalls != 1 {
+		t.Fatalf("expected 1 find after call")
+	}
+
+	if len(result) != 1 || result[0] != post {
+		t.Fatalf("expected post result")
+	}
+}
+
+func TestFindAfterReturnsError(t *testing.T) {
+	fixture := newApplicationFixture()
+	fixture.repository.FindAfterErr = errTest
+
+	_, err := fixture.application.FindAfter(uuid.New(), 25)
+
+	if !errors.Is(err, errTest) {
+		t.Fatalf("expected find after error, got %v", err)
+	}
+}
+
+func TestCount(t *testing.T) {
+	fixture := newApplicationFixture()
+	fixture.repository.CountValue = 123
+
+	result, err := fixture.application.Count()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if fixture.repository.CountCalls != 1 {
+		t.Fatalf("expected 1 count call")
+	}
+
+	if result != 123 {
+		t.Fatalf("expected count 123, got %d", result)
+	}
+}
+
+func TestCountReturnsError(t *testing.T) {
+	fixture := newApplicationFixture()
+	fixture.repository.CountErr = errTest
+
+	_, err := fixture.application.Count()
+
+	if !errors.Is(err, errTest) {
+		t.Fatalf("expected count error, got %v", err)
 	}
 }
 

@@ -13,10 +13,11 @@ import (
 )
 
 type application struct {
-	repository     domain_campaigns.Repository
-	posts          app_posts.Application
-	participations app_participations.Application
-	classifier     domain_campaigns.Classifier
+	repository       domain_campaigns.Repository
+	posts            app_posts.Application
+	participations   app_participations.Application
+	classifier       domain_campaigns.Classifier
+	rebuildBatchSize int
 }
 
 func createApplication(
@@ -24,12 +25,14 @@ func createApplication(
 	posts app_posts.Application,
 	participations app_participations.Application,
 	classifier domain_campaigns.Classifier,
+	rebuildBatchSize int,
 ) Application {
 	return &application{
-		repository:     repository,
-		posts:          posts,
-		participations: participations,
-		classifier:     classifier,
+		repository:       repository,
+		posts:            posts,
+		participations:   participations,
+		classifier:       classifier,
+		rebuildBatchSize: rebuildBatchSize,
 	}
 }
 
@@ -39,8 +42,18 @@ func (app *application) FindByID(
 	return app.repository.FindByID(id)
 }
 
-func (app *application) FindAll() ([]domain_campaigns.Campaign, error) {
-	return app.repository.FindAll()
+func (app *application) Find(
+	index int,
+	amount int,
+) ([]domain_campaigns.Campaign, error) {
+	return app.repository.Find(index, amount)
+}
+
+func (app *application) FindAfter(
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_campaigns.Campaign, error) {
+	return app.repository.FindAfter(cursor, amount)
 }
 
 func (app *application) FindCampaignsByUser(
@@ -89,22 +102,34 @@ func (app *application) findCampaignsByParticipant(
 	return out, nil
 }
 
-func (app *application) RebuildCampaigns() error {
-	posts, err := app.posts.FindAll()
-	if err != nil {
-		return err
-	}
+func (app *application) Count() (int64, error) {
+	return app.repository.Count()
+}
 
-	for _, post := range posts {
-		campaign, _, err := app.classifier.Classify(post)
+func (app *application) RebuildCampaigns() error {
+	cursor := uuid.Nil
+
+	for {
+		posts, err := app.posts.FindAfter(cursor, app.rebuildBatchSize)
 		if err != nil {
 			return err
 		}
 
-		if err := app.repository.Save(campaign); err != nil {
-			return err
+		if len(posts) == 0 {
+			return nil
 		}
-	}
 
-	return nil
+		for _, post := range posts {
+			campaign, _, err := app.classifier.Classify(post)
+			if err != nil {
+				return err
+			}
+
+			if err := app.repository.Save(campaign); err != nil {
+				return err
+			}
+		}
+
+		cursor = posts[len(posts)-1].Identifier()
+	}
 }
