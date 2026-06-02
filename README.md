@@ -10,40 +10,40 @@ AABS assigns trust scores to accounts, posts, comments, and conversations, helpi
 
 ## Table of Contents
 
-- Overview
+- [Overview](#overview)
 
-- Architecture
-  - Layers
-  - Application Graph
+- [Architecture](#architecture)
+  - [Layers](#layers)
+  - [Application Graph](#application-graph)
 
-- Applications
-  - Root Application
-  - Pipeline Application
+- [Applications](#applications)
+  - [Root Application](#root-application)
+  - [Pipeline Application](#pipeline-application)
 
-  - Posts Application
-  - Users Application
-  - Communities Application
-  - Platforms Application
-  - Searches Application
+  - [Posts Application](#posts-application)
+  - [Users Application](#users-application)
+  - [Communities Application](#communities-application)
+  - [Platforms Application](#platforms-application)
+  - [Searches Application](#searches-application)
 
-  - Groupings Application
-    - Clusters Application
-    - Campaigns Application
-    - Topics Application
-    - Narratives Application
-    - Participations Application
-      - Participation Evidences Application
+  - [Groupings Application](#groupings-application)
+    - [Clusters Application](#clusters-application)
+    - [Campaigns Application](#campaigns-application)
+    - [Topics Application](#topics-application)
+    - [Narratives Application](#narratives-application)
+    - [Participations Application](#participations-application)
+      - [Participation Evidences Application](#participation-evidences-application)
 
-  - Relationships Application
-    - Comparables Application
+  - [Relationships Application](#relationships-application)
+    - [Comparables Application](#comparables-application)
 
-  - Scores Application
+  - [Scores Application](#scores-application)
 
-- Processing Pipeline
+- [Processing Pipeline](#processing-pipeline)
 
-- Development
+- [Development](#development)
 
-- License
+- [License](#license)
 
 ## Overview
 
@@ -86,7 +86,7 @@ The infrastructure layer provides implementations such as databases, embedding e
   - Relationships
     - Comparables
   - Scores
-  
+
 Applications communicate through interfaces rather than concrete implementations.
 
 This keeps the system testable, modular, and independent from storage technologies.
