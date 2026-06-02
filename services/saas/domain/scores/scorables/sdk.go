@@ -31,3 +31,9 @@ type Scorable interface {
 	Identifier() uuid.UUID
 	ScoreKind() Kind
 }
+
+// Repository represents a scorable repository
+type Repository interface {
+	FindAll() ([]Scorable, error)
+	FindByID(id uuid.UUID) (Scorable, error)
+}

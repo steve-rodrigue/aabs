@@ -38,6 +38,7 @@ func (application *MockScoresApplication) Calculate(
 
 func (application *MockScoresApplication) LatestScore(
 	id uuid.UUID,
+	scoreType domain_scores.Type,
 ) (domain_scores.Score, error) {
 	application.LatestScoreCalls++
 
@@ -46,6 +47,7 @@ func (application *MockScoresApplication) LatestScore(
 
 func (application *MockScoresApplication) ScoreHistory(
 	id uuid.UUID,
+	scoreType domain_scores.Type,
 ) ([]domain_scores.Score, error) {
 	application.ScoreHistoryCalls++
 
