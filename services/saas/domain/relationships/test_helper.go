@@ -13,6 +13,16 @@ func NewMockRelationship() Relationship {
 	}
 }
 
+func NewMockRelationshipRepository() *MockRelationshipRepository {
+	return &MockRelationshipRepository{
+		Items: map[uuid.UUID]Relationship{},
+	}
+}
+
+func NewMockRelationshipBuilder() *MockRelationshipBuilder {
+	return &MockRelationshipBuilder{}
+}
+
 type MockRelationship struct {
 	id         uuid.UUID
 	source     relatables.Relatable
@@ -49,14 +59,29 @@ type MockRelationshipRepository struct {
 	FindByIDCalls int
 	FindByIDErr   error
 
+	FindAllCalls int
+	FindAllErr   error
+	FindAllValue []Relationship
+
+	FindBySourceIDCalls int
+	FindBySourceIDErr   error
+	FindBySourceIDValue []Relationship
+
+	FindByTargetIDCalls int
+	FindByTargetIDErr   error
+	FindByTargetIDValue []Relationship
+
 	FindBySourceCalls int
 	FindBySourceErr   error
+	FindBySourceValue []Relationship
 
 	FindByTargetCalls int
 	FindByTargetErr   error
+	FindByTargetValue []Relationship
 
 	FindBetweenCalls int
 	FindBetweenErr   error
+	FindBetweenValue Relationship
 }
 
 func (repository *MockRelationshipRepository) Save(relationship Relationship) error {
@@ -72,7 +97,55 @@ func (repository *MockRelationshipRepository) FindByID(id uuid.UUID) (Relationsh
 		return nil, repository.FindByIDErr
 	}
 
+	if repository.Items == nil {
+		return nil, nil
+	}
+
 	return repository.Items[id], nil
+}
+
+func (repository *MockRelationshipRepository) FindAll() ([]Relationship, error) {
+	repository.FindAllCalls++
+
+	if repository.FindAllErr != nil {
+		return nil, repository.FindAllErr
+	}
+
+	if repository.FindAllValue != nil {
+		return repository.FindAllValue, nil
+	}
+
+	out := make([]Relationship, 0, len(repository.Items))
+
+	for _, relationship := range repository.Items {
+		out = append(out, relationship)
+	}
+
+	return out, nil
+}
+
+func (repository *MockRelationshipRepository) FindBySourceID(
+	source uuid.UUID,
+) ([]Relationship, error) {
+	repository.FindBySourceIDCalls++
+
+	if repository.FindBySourceIDErr != nil {
+		return nil, repository.FindBySourceIDErr
+	}
+
+	return repository.FindBySourceIDValue, nil
+}
+
+func (repository *MockRelationshipRepository) FindByTargetID(
+	target uuid.UUID,
+) ([]Relationship, error) {
+	repository.FindByTargetIDCalls++
+
+	if repository.FindByTargetIDErr != nil {
+		return nil, repository.FindByTargetIDErr
+	}
+
+	return repository.FindByTargetIDValue, nil
 }
 
 func (repository *MockRelationshipRepository) FindBySource(
@@ -84,7 +157,7 @@ func (repository *MockRelationshipRepository) FindBySource(
 		return nil, repository.FindBySourceErr
 	}
 
-	return []Relationship{}, nil
+	return repository.FindBySourceValue, nil
 }
 
 func (repository *MockRelationshipRepository) FindByTarget(
@@ -96,7 +169,7 @@ func (repository *MockRelationshipRepository) FindByTarget(
 		return nil, repository.FindByTargetErr
 	}
 
-	return []Relationship{}, nil
+	return repository.FindByTargetValue, nil
 }
 
 func (repository *MockRelationshipRepository) FindBetween(
@@ -109,5 +182,26 @@ func (repository *MockRelationshipRepository) FindBetween(
 		return nil, repository.FindBetweenErr
 	}
 
-	return nil, nil
+	return repository.FindBetweenValue, nil
+}
+
+type MockRelationshipBuilder struct {
+	BuildCalls  int
+	BuildErr    error
+	BuildValue  []Relationship
+	LastSource  relatables.Relatable
+	LastTargets []relatables.Relatable
+}
+
+func (builder *MockRelationshipBuilder) Build(
+
+	source relatables.Relatable,
+	targets []relatables.Relatable,
+
+) ([]Relationship, error) {
+	builder.BuildCalls++
+	builder.LastSource = source
+	builder.LastTargets = targets
+	return builder.BuildValue, builder.BuildErr
+
 }

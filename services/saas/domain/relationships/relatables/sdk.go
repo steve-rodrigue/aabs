@@ -16,3 +16,7 @@ type Relatable interface {
 	Identifier() uuid.UUID
 	RelationshipKind() Kind
 }
+
+type Repository interface {
+	FindAll() ([]Relatable, error)
+}
