@@ -11,21 +11,17 @@ AABS assigns trust scores to accounts, posts, comments, and conversations, helpi
 ## Table of Contents
 
 - [Overview](#overview)
-
 - [Architecture](#architecture)
   - [Layers](#layers)
   - [Application Graph](#application-graph)
-
 - [Applications](#applications)
   - [Root Application](#root-application)
   - [Pipeline Application](#pipeline-application)
-
   - [Posts Application](#posts-application)
   - [Users Application](#users-application)
   - [Communities Application](#communities-application)
   - [Platforms Application](#platforms-application)
   - [Searches Application](#searches-application)
-
   - [Groupings Application](#groupings-application)
     - [Clusters Application](#clusters-application)
     - [Campaigns Application](#campaigns-application)
@@ -33,16 +29,11 @@ AABS assigns trust scores to accounts, posts, comments, and conversations, helpi
     - [Narratives Application](#narratives-application)
     - [Participations Application](#participations-application)
       - [Participation Evidences Application](#participation-evidences-application)
-
   - [Relationships Application](#relationships-application)
     - [Comparables Application](#comparables-application)
-
   - [Scores Application](#scores-application)
-
 - [Processing Pipeline](#processing-pipeline)
-
 - [Development](#development)
-
 - [License](#license)
 
 ## Overview
