@@ -1,14 +1,20 @@
 package topics
 
 import (
+	"context"
 	"sort"
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/posts"
 )
+
+func NewMockTopicAdapter() *MockTopicAdapter {
+	return &MockTopicAdapter{}
+}
 
 func NewMockTopic(
 	name string,
@@ -102,16 +108,39 @@ type MockTopicRepository struct {
 	FindRootsCalls int
 	FindRootsErr   error
 	FindRootsValue []Topic
+
+	LastContext context.Context
+	LastTopic   Topic
+	LastID      uuid.UUID
+	LastName    string
+	LastIndex   int
+	LastAmount  int
+	LastCursor  uuid.UUID
+	LastParent  uuid.UUID
 }
 
-func (repository *MockTopicRepository) Save(topic Topic) error {
+func (repository *MockTopicRepository) Save(
+	ctx context.Context,
+	topic Topic,
+) error {
 	repository.SaveCalls++
+	repository.LastContext = ctx
+	repository.LastTopic = topic
+
+	if repository.Items != nil && topic != nil {
+		repository.Items[topic.Identifier()] = topic
+	}
 
 	return repository.SaveErr
 }
 
-func (repository *MockTopicRepository) FindByID(id uuid.UUID) (Topic, error) {
+func (repository *MockTopicRepository) FindByID(
+	ctx context.Context,
+	id uuid.UUID,
+) (Topic, error) {
 	repository.FindByIDCalls++
+	repository.LastContext = ctx
+	repository.LastID = id
 
 	if repository.FindByIDErr != nil {
 		return nil, repository.FindByIDErr
@@ -120,8 +149,13 @@ func (repository *MockTopicRepository) FindByID(id uuid.UUID) (Topic, error) {
 	return repository.Items[id], nil
 }
 
-func (repository *MockTopicRepository) FindByName(name string) (Topic, error) {
+func (repository *MockTopicRepository) FindByName(
+	ctx context.Context,
+	name string,
+) (Topic, error) {
 	repository.FindByNameCalls++
+	repository.LastContext = ctx
+	repository.LastName = name
 
 	if repository.FindByNameErr != nil {
 		return nil, repository.FindByNameErr
@@ -137,10 +171,14 @@ func (repository *MockTopicRepository) FindByName(name string) (Topic, error) {
 }
 
 func (repository *MockTopicRepository) Find(
+	ctx context.Context,
 	index int,
 	amount int,
 ) ([]Topic, error) {
 	repository.FindCalls++
+	repository.LastContext = ctx
+	repository.LastIndex = index
+	repository.LastAmount = amount
 
 	if repository.FindErr != nil {
 		return nil, repository.FindErr
@@ -165,10 +203,14 @@ func (repository *MockTopicRepository) Find(
 }
 
 func (repository *MockTopicRepository) FindAfter(
+	ctx context.Context,
 	cursor uuid.UUID,
 	amount int,
 ) ([]Topic, error) {
 	repository.FindAfterCalls++
+	repository.LastContext = ctx
+	repository.LastCursor = cursor
+	repository.LastAmount = amount
 
 	if repository.FindAfterErr != nil {
 		return nil, repository.FindAfterErr
@@ -203,8 +245,11 @@ func (repository *MockTopicRepository) FindAfter(
 	return topics[start:end], nil
 }
 
-func (repository *MockTopicRepository) Count() (int64, error) {
+func (repository *MockTopicRepository) Count(
+	ctx context.Context,
+) (int64, error) {
 	repository.CountCalls++
+	repository.LastContext = ctx
 
 	if repository.CountErr != nil {
 		return 0, repository.CountErr
@@ -217,8 +262,13 @@ func (repository *MockTopicRepository) Count() (int64, error) {
 	return int64(len(repository.Items)), nil
 }
 
-func (repository *MockTopicRepository) FindChildren(parent uuid.UUID) ([]Topic, error) {
+func (repository *MockTopicRepository) FindChildren(
+	ctx context.Context,
+	parent uuid.UUID,
+) ([]Topic, error) {
 	repository.FindChildrenCalls++
+	repository.LastContext = ctx
+	repository.LastParent = parent
 
 	if repository.FindChildrenErr != nil {
 		return nil, repository.FindChildrenErr
@@ -243,8 +293,11 @@ func (repository *MockTopicRepository) FindChildren(parent uuid.UUID) ([]Topic, 
 	return out, nil
 }
 
-func (repository *MockTopicRepository) FindRoots() ([]Topic, error) {
+func (repository *MockTopicRepository) FindRoots(
+	ctx context.Context,
+) ([]Topic, error) {
 	repository.FindRootsCalls++
+	repository.LastContext = ctx
 
 	if repository.FindRootsErr != nil {
 		return nil, repository.FindRootsErr
@@ -283,19 +336,52 @@ func (repository *MockTopicRepository) sortedTopics() []Topic {
 type MockTopicBuilder struct {
 	BuildCalls int
 	BuildErr   error
-	LastPosts  []posts.Post
+
+	LastContext context.Context
+	LastPosts   []posts.Post
+
 	BuildValue []Topic
 }
 
 func (builder *MockTopicBuilder) Build(
-
+	ctx context.Context,
 	posts []posts.Post,
-
 ) ([]Topic, error) {
-
 	builder.BuildCalls++
+	builder.LastContext = ctx
 	builder.LastPosts = posts
+
 	return builder.BuildValue,
 		builder.BuildErr
+}
 
+type MockTopicAdapter struct {
+	ToDomainCalls int
+	ToDomainErr   error
+	ToDomainValue Topic
+
+	LastInput TopicInput
+}
+
+func (adapter *MockTopicAdapter) ToDomain(
+	input TopicInput,
+) (Topic, error) {
+	adapter.ToDomainCalls++
+	adapter.LastInput = input
+
+	if adapter.ToDomainErr != nil {
+		return nil, adapter.ToDomainErr
+	}
+
+	if adapter.ToDomainValue != nil {
+		return adapter.ToDomainValue, nil
+	}
+
+	return &MockTopic{
+		id:          input.Identifier,
+		cluster:     input.Cluster,
+		name:        input.Name,
+		description: input.Description,
+		parent:      input.Parent,
+	}, nil
 }

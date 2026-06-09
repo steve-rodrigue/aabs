@@ -6,7 +6,7 @@ import (
 	"github.com/steve-rodrigue/aabs/services/saas/applications/relationships"
 	"github.com/steve-rodrigue/aabs/services/saas/applications/scores"
 	"github.com/steve-rodrigue/aabs/services/saas/applications/searches"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/posts"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 )
 
 // New creates a new pipeline application

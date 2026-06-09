@@ -1,20 +1,23 @@
 package relationships
 
 import (
+	"context"
+
 	"github.com/google/uuid"
 
-	relationship_comparables "github.com/steve-rodrigue/aabs/services/saas/applications/relationships/comparables"
 	domain_relationships "github.com/steve-rodrigue/aabs/services/saas/domain/relationships"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/builders"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/comparables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/relatables"
 )
 
 // New creates a new relationships application
 func New(
 	repository domain_relationships.Repository,
-	builder domain_relationships.Builder,
+	builder builders.Builder,
 	relatableRepository relatables.Repository,
 	candidateRepository relatables.CandidateRepository,
-	comparables relationship_comparables.Application,
+	comparator comparables.Comparator,
 	rebuildBatchSize int,
 ) Application {
 	return createApplication(
@@ -22,25 +25,55 @@ func New(
 		builder,
 		relatableRepository,
 		candidateRepository,
-		comparables,
+		comparator,
 		rebuildBatchSize,
 	)
 }
 
 // Application represents the relationships application
 type Application interface {
-	Comparables() relationship_comparables.Application
+	Build(
+		source relatables.Relatable,
+		targets []relatables.Relatable,
+	) ([]domain_relationships.Relationship, error)
 
-	Build(source relatables.Relatable, targets []relatables.Relatable) ([]domain_relationships.Relationship, error)
-	Sync(relationships []domain_relationships.Relationship) error
+	Sync(
+		ctx context.Context,
+		relationships []domain_relationships.Relationship,
+	) error
 
-	Find(index int, amount int) ([]domain_relationships.Relationship, error)
-	FindByID(id uuid.UUID) (domain_relationships.Relationship, error)
-	FindAfter(cursor uuid.UUID, amount int) ([]domain_relationships.Relationship, error)
-	Count() (int64, error)
+	Find(
+		ctx context.Context,
+		index int,
+		amount int,
+	) ([]domain_relationships.Relationship, error)
 
-	RelationshipsBySource(id uuid.UUID) ([]domain_relationships.Relationship, error)
-	RelationshipsByTarget(id uuid.UUID) ([]domain_relationships.Relationship, error)
+	FindByID(
+		ctx context.Context,
+		id uuid.UUID,
+	) (domain_relationships.Relationship, error)
 
-	RebuildRelationships() error
+	FindAfter(
+		ctx context.Context,
+		cursor uuid.UUID,
+		amount int,
+	) ([]domain_relationships.Relationship, error)
+
+	Count(
+		ctx context.Context,
+	) (int64, error)
+
+	RelationshipsBySource(
+		ctx context.Context,
+		id uuid.UUID,
+	) ([]domain_relationships.Relationship, error)
+
+	RelationshipsByTarget(
+		ctx context.Context,
+		id uuid.UUID,
+	) ([]domain_relationships.Relationship, error)
+
+	RebuildRelationships(
+		ctx context.Context,
+	) error
 }

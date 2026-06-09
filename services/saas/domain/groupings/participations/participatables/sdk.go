@@ -9,6 +9,8 @@ const (
 	CommunityKind Kind = "community"
 	PlatformKind  Kind = "platform"
 
+	PostKind Kind = "post"
+
 	CampaignKind  Kind = "campaign"
 	TopicKind     Kind = "topic"
 	NarrativeKind Kind = "narrative"
@@ -20,10 +22,4 @@ const (
 type Participatable interface {
 	Identifier() uuid.UUID
 	ParticipationKind() Kind
-}
-
-// Repository represents a participatable repository
-type Repository interface {
-	FindAllParticipants() ([]Participatable, error)
-	FindAllTargets() ([]Participatable, error)
 }

@@ -164,3 +164,22 @@ services:
       - ./data/memgraph:/var/lib/memgraph
 
     restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+
+    container_name: aabs-redis
+
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory-policy noeviction
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - ./data/redis:/data
+
+    restart: unless-stopped

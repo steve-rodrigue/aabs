@@ -1,6 +1,7 @@
 package clusters
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -14,19 +15,22 @@ var errTest = errors.New("test error")
 
 func TestBuildForTarget(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
 	target := clusterables.NewMockClusterable(clusterables.PostKind)
 	member := clusterables.NewMockClusterable(clusterables.PostKind)
-
 	cluster := domain_clusters.NewMockCluster(
 		target,
 		clusterables.PostKind,
 		[]uuid.UUID{member.Identifier()},
 	)
 
-	fixture.detector.DetectValue = []domain_clusters.Cluster{cluster}
+	fixture.detector.DetectValue = []domain_clusters.Cluster{
+		cluster,
+	}
 
 	result, err := fixture.application.BuildForTarget(
+		ctx,
 		target,
 		[]clusterables.Clusterable{member},
 	)
@@ -39,34 +43,55 @@ func TestBuildForTarget(t *testing.T) {
 		t.Fatalf("expected 1 detect call")
 	}
 
+	if fixture.detector.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
+	if fixture.detector.LastTarget != target {
+		t.Fatalf("expected target to be passed")
+	}
+
+	if len(fixture.detector.LastMembers) != 1 ||
+		fixture.detector.LastMembers[0] != member {
+		t.Fatalf("expected members to be passed")
+	}
+
 	if len(result) != 1 || result[0] != cluster {
 		t.Fatalf("expected cluster result")
 	}
 }
 
-func TestBuildForTargetReturnsDetectorError(t *testing.T) {
+func TestBuildForTargetReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
 	fixture.detector.DetectErr = errTest
 
 	_, err := fixture.application.BuildForTarget(
+		context.Background(),
 		clusterables.NewMockClusterable(clusterables.PostKind),
 		nil,
 	)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected detector error, got %v", err)
+		t.Fatalf("expected error, got %v", err)
 	}
 }
 
 func TestFindByID(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
-	target := clusterables.NewMockClusterable(clusterables.PostKind)
-	cluster := domain_clusters.NewMockCluster(target, clusterables.PostKind, nil)
+	cluster := domain_clusters.NewMockCluster(
+		clusterables.NewMockClusterable(clusterables.PostKind),
+		clusterables.PostKind,
+		[]uuid.UUID{uuid.New()},
+	)
 
 	fixture.repository.Items[cluster.Identifier()] = cluster
 
-	result, err := fixture.application.FindByID(cluster.Identifier())
+	result, err := fixture.application.FindByID(
+		ctx,
+		cluster.Identifier(),
+	)
 
 	if err != nil {
 		t.Fatal(err)
@@ -74,6 +99,14 @@ func TestFindByID(t *testing.T) {
 
 	if fixture.repository.FindByIDCalls != 1 {
 		t.Fatalf("expected 1 find by id call")
+	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
+	if fixture.repository.LastID != cluster.Identifier() {
+		t.Fatalf("expected id to be passed")
 	}
 
 	if result != cluster {
@@ -85,22 +118,36 @@ func TestFindByIDReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
 	fixture.repository.FindByIDErr = errTest
 
-	_, err := fixture.application.FindByID(uuid.New())
+	_, err := fixture.application.FindByID(
+		context.Background(),
+		uuid.New(),
+	)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected find by id error, got %v", err)
+		t.Fatalf("expected error, got %v", err)
 	}
 }
 
 func TestFindByTarget(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
 	target := clusterables.NewMockClusterable(clusterables.PostKind)
-	cluster := domain_clusters.NewMockCluster(target, clusterables.PostKind, nil)
 
-	fixture.repository.FindByTargetValue = []domain_clusters.Cluster{cluster}
+	cluster := domain_clusters.NewMockCluster(
+		target,
+		clusterables.PostKind,
+		[]uuid.UUID{uuid.New()},
+	)
 
-	result, err := fixture.application.FindByTarget(target)
+	fixture.repository.FindByTargetValue = []domain_clusters.Cluster{
+		cluster,
+	}
+
+	result, err := fixture.application.FindByTarget(
+		ctx,
+		target,
+	)
 
 	if err != nil {
 		t.Fatal(err)
@@ -108,6 +155,14 @@ func TestFindByTarget(t *testing.T) {
 
 	if fixture.repository.FindByTargetCalls != 1 {
 		t.Fatalf("expected 1 find by target call")
+	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
+	if fixture.repository.LastTarget != target.Identifier() {
+		t.Fatalf("expected target id to be passed")
 	}
 
 	if len(result) != 1 || result[0] != cluster {
@@ -120,29 +175,35 @@ func TestFindByTargetReturnsError(t *testing.T) {
 	fixture.repository.FindByTargetErr = errTest
 
 	_, err := fixture.application.FindByTarget(
+		context.Background(),
 		clusterables.NewMockClusterable(clusterables.PostKind),
 	)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected find by target error, got %v", err)
+		t.Fatalf("expected error, got %v", err)
 	}
 }
 
 func TestFindByMember(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
-	target := clusterables.NewMockClusterable(clusterables.PostKind)
 	member := clusterables.NewMockClusterable(clusterables.PostKind)
 
 	cluster := domain_clusters.NewMockCluster(
-		target,
+		clusterables.NewMockClusterable(clusterables.PostKind),
 		clusterables.PostKind,
 		[]uuid.UUID{member.Identifier()},
 	)
 
-	fixture.repository.FindByMemberValue = []domain_clusters.Cluster{cluster}
+	fixture.repository.FindByMemberValue = []domain_clusters.Cluster{
+		cluster,
+	}
 
-	result, err := fixture.application.FindByMember(member)
+	result, err := fixture.application.FindByMember(
+		ctx,
+		member,
+	)
 
 	if err != nil {
 		t.Fatal(err)
@@ -150,6 +211,14 @@ func TestFindByMember(t *testing.T) {
 
 	if fixture.repository.FindByMemberCalls != 1 {
 		t.Fatalf("expected 1 find by member call")
+	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
+	if fixture.repository.LastMember != member.Identifier() {
+		t.Fatalf("expected member id to be passed")
 	}
 
 	if len(result) != 1 || result[0] != cluster {
@@ -162,70 +231,93 @@ func TestFindByMemberReturnsError(t *testing.T) {
 	fixture.repository.FindByMemberErr = errTest
 
 	_, err := fixture.application.FindByMember(
+		context.Background(),
 		clusterables.NewMockClusterable(clusterables.PostKind),
 	)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected find by member error, got %v", err)
+		t.Fatalf("expected error, got %v", err)
 	}
 }
 
 func TestRebuildPostClusters(t *testing.T) {
-	fixture := newApplicationFixture()
+	assertRebuildKind(t, clusterables.PostKind, func(
+		ctx context.Context,
+		app Application,
+	) error {
+		return app.RebuildPostClusters(ctx)
+	})
+}
 
-	target := clusterables.NewMockClusterable(clusterables.PostKind)
-	candidate := clusterables.NewMockClusterable(clusterables.PostKind)
+func TestRebuildUserClusters(t *testing.T) {
+	assertRebuildKind(t, clusterables.UserKind, func(
+		ctx context.Context,
+		app Application,
+	) error {
+		return app.RebuildUserClusters(ctx)
+	})
+}
 
-	cluster := domain_clusters.NewMockCluster(
-		target,
-		clusterables.PostKind,
-		[]uuid.UUID{candidate.Identifier()},
-	)
+func TestRebuildCommunityClusters(t *testing.T) {
+	assertRebuildKind(t, clusterables.CommunityKind, func(
+		ctx context.Context,
+		app Application,
+	) error {
+		return app.RebuildCommunityClusters(ctx)
+	})
+}
 
-	fixture.clusterables.FindByKindAfterValue = []clusterables.Clusterable{
-		target,
-	}
-	fixture.candidates.FindCandidatesValue = []clusterables.Clusterable{
-		candidate,
-	}
-	fixture.detector.DetectValue = []domain_clusters.Cluster{
-		cluster,
-	}
+func TestRebuildPlatformClusters(t *testing.T) {
+	assertRebuildKind(t, clusterables.PlatformKind, func(
+		ctx context.Context,
+		app Application,
+	) error {
+		return app.RebuildPlatformClusters(ctx)
+	})
+}
 
-	err := fixture.application.RebuildPostClusters()
+func TestRebuildCampaignClusters(t *testing.T) {
+	assertRebuildKind(t, clusterables.CampaignKind, func(
+		ctx context.Context,
+		app Application,
+	) error {
+		return app.RebuildCampaignClusters(ctx)
+	})
+}
 
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestRebuildTopicClusters(t *testing.T) {
+	assertRebuildKind(t, clusterables.TopicKind, func(
+		ctx context.Context,
+		app Application,
+	) error {
+		return app.RebuildTopicClusters(ctx)
+	})
+}
 
-	if fixture.clusterables.FindByKindAfterCalls != 2 {
-		t.Fatalf("expected 2 find by kind after calls, got %d", fixture.clusterables.FindByKindAfterCalls)
-	}
-
-	if fixture.candidates.FindCandidatesCalls != 1 {
-		t.Fatalf("expected 1 find candidates call")
-	}
-
-	if fixture.detector.DetectCalls != 1 {
-		t.Fatalf("expected 1 detect call")
-	}
-
-	if fixture.repository.SaveCalls != 1 {
-		t.Fatalf("expected 1 save call")
-	}
+func TestRebuildNarrativeClusters(t *testing.T) {
+	assertRebuildKind(t, clusterables.NarrativeKind, func(
+		ctx context.Context,
+		app Application,
+	) error {
+		return app.RebuildNarrativeClusters(ctx)
+	})
 }
 
 func TestRebuildAll(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
-	err := fixture.application.RebuildAll()
+	err := fixture.application.RebuildAll(ctx)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if fixture.clusterables.FindByKindAfterCalls != 7 {
-		t.Fatalf("expected 7 rebuild calls, got %d", fixture.clusterables.FindByKindAfterCalls)
+		t.Fatalf(
+			"expected 7 find by kind after calls, got %d",
+			fixture.clusterables.FindByKindAfterCalls,
+		)
 	}
 }
 
@@ -233,203 +325,208 @@ func TestRebuildAllReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
 	fixture.clusterables.FindByKindAfterErr = errTest
 
-	err := fixture.application.RebuildAll()
+	err := fixture.application.RebuildAll(
+		context.Background(),
+	)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected rebuild all error, got %v", err)
+		t.Fatalf("expected error, got %v", err)
 	}
 }
 
-func TestRebuildAllReturnsUserClustersError(t *testing.T) {
-	fixture := newApplicationFixture()
-	fixture.clusterables.FailOnCall = 2
-	fixture.clusterables.FindByKindAfterErr = errTest
-
-	err := fixture.application.RebuildAll()
-
-	if !errors.Is(err, errTest) {
-		t.Fatalf("expected user clusters error, got %v", err)
-	}
-}
-
-func TestRebuildAllReturnsCommunityClustersError(t *testing.T) {
-	fixture := newApplicationFixture()
-	fixture.clusterables.FailOnCall = 3
-	fixture.clusterables.FindByKindAfterErr = errTest
-
-	err := fixture.application.RebuildAll()
-
-	if !errors.Is(err, errTest) {
-		t.Fatalf("expected community clusters error, got %v", err)
-	}
-}
-
-func TestRebuildAllReturnsPlatformClustersError(t *testing.T) {
-	fixture := newApplicationFixture()
-	fixture.clusterables.FailOnCall = 4
-	fixture.clusterables.FindByKindAfterErr = errTest
-
-	err := fixture.application.RebuildAll()
-
-	if !errors.Is(err, errTest) {
-		t.Fatalf("expected platform clusters error, got %v", err)
-	}
-}
-
-func TestRebuildAllReturnsCampaignClustersError(t *testing.T) {
-	fixture := newApplicationFixture()
-	fixture.clusterables.FailOnCall = 5
-	fixture.clusterables.FindByKindAfterErr = errTest
-
-	err := fixture.application.RebuildAll()
-
-	if !errors.Is(err, errTest) {
-		t.Fatalf("expected campaign clusters error, got %v", err)
-	}
-}
-
-func TestRebuildAllReturnsTopicClustersError(t *testing.T) {
-	fixture := newApplicationFixture()
-	fixture.clusterables.FailOnCall = 6
-	fixture.clusterables.FindByKindAfterErr = errTest
-
-	err := fixture.application.RebuildAll()
-
-	if !errors.Is(err, errTest) {
-		t.Fatalf("expected topic clusters error, got %v", err)
-	}
-}
-
-func TestRebuildAllReturnsNarrativeClustersError(t *testing.T) {
-	fixture := newApplicationFixture()
-	fixture.clusterables.FailOnCall = 7
-	fixture.clusterables.FindByKindAfterErr = errTest
-
-	err := fixture.application.RebuildAll()
-
-	if !errors.Is(err, errTest) {
-		t.Fatalf("expected narrative clusters error, got %v", err)
-	}
-}
-
-func TestRebuildUserClusters(t *testing.T) {
-	assertRebuildKind(t, clusterables.UserKind, func(app Application) error {
-		return app.RebuildUserClusters()
-	})
-}
-
-func TestRebuildCommunityClusters(t *testing.T) {
-	assertRebuildKind(t, clusterables.CommunityKind, func(app Application) error {
-		return app.RebuildCommunityClusters()
-	})
-}
-
-func TestRebuildPlatformClusters(t *testing.T) {
-	assertRebuildKind(t, clusterables.PlatformKind, func(app Application) error {
-		return app.RebuildPlatformClusters()
-	})
-}
-
-func TestRebuildCampaignClusters(t *testing.T) {
-	assertRebuildKind(t, clusterables.CampaignKind, func(app Application) error {
-		return app.RebuildCampaignClusters()
-	})
-}
-
-func TestRebuildTopicClusters(t *testing.T) {
-	assertRebuildKind(t, clusterables.TopicKind, func(app Application) error {
-		return app.RebuildTopicClusters()
-	})
-}
-
-func TestRebuildNarrativeClusters(t *testing.T) {
-	assertRebuildKind(t, clusterables.NarrativeKind, func(app Application) error {
-		return app.RebuildNarrativeClusters()
-	})
-}
-
-func TestRebuildReturnsClusterableRepositoryError(t *testing.T) {
+func TestRebuildClustersReturnsClusterableRepositoryError(t *testing.T) {
 	fixture := newApplicationFixture()
 	fixture.clusterables.FindByKindAfterErr = errTest
 
-	err := fixture.application.RebuildPostClusters()
+	err := fixture.application.RebuildPostClusters(
+		context.Background(),
+	)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected clusterable repository error, got %v", err)
+		t.Fatalf("expected error, got %v", err)
 	}
 }
 
-func TestRebuildReturnsCandidateRepositoryError(t *testing.T) {
-	fixture := newApplicationFixture()
-
-	fixture.clusterables.FindByKindAfterValue = []clusterables.Clusterable{
-		clusterables.NewMockClusterable(clusterables.PostKind),
-	}
-	fixture.candidates.FindCandidatesErr = errTest
-
-	err := fixture.application.RebuildPostClusters()
-
-	if !errors.Is(err, errTest) {
-		t.Fatalf("expected candidate repository error, got %v", err)
-	}
-}
-
-func TestRebuildReturnsDetectorError(t *testing.T) {
-	fixture := newApplicationFixture()
-
-	fixture.clusterables.FindByKindAfterValue = []clusterables.Clusterable{
-		clusterables.NewMockClusterable(clusterables.PostKind),
-	}
-	fixture.detector.DetectErr = errTest
-
-	err := fixture.application.RebuildPostClusters()
-
-	if !errors.Is(err, errTest) {
-		t.Fatalf("expected detector error, got %v", err)
-	}
-}
-
-func TestRebuildReturnsSaveError(t *testing.T) {
+func TestRebuildClustersReturnsCandidateRepositoryError(t *testing.T) {
 	fixture := newApplicationFixture()
 
 	target := clusterables.NewMockClusterable(clusterables.PostKind)
-	cluster := domain_clusters.NewMockCluster(target, clusterables.PostKind, nil)
 
 	fixture.clusterables.FindByKindAfterValue = []clusterables.Clusterable{
 		target,
 	}
+
+	fixture.candidates.FindCandidatesErr = errTest
+
+	err := fixture.application.RebuildPostClusters(
+		context.Background(),
+	)
+
+	if !errors.Is(err, errTest) {
+		t.Fatalf("expected error, got %v", err)
+	}
+}
+
+func TestRebuildClustersReturnsDetectorError(t *testing.T) {
+	fixture := newApplicationFixture()
+
+	target := clusterables.NewMockClusterable(clusterables.PostKind)
+
+	fixture.clusterables.FindByKindAfterValue = []clusterables.Clusterable{
+		target,
+	}
+
+	fixture.detector.DetectErr = errTest
+
+	err := fixture.application.RebuildPostClusters(
+		context.Background(),
+	)
+
+	if !errors.Is(err, errTest) {
+		t.Fatalf("expected error, got %v", err)
+	}
+}
+
+func TestRebuildClustersReturnsRepositorySaveError(t *testing.T) {
+	fixture := newApplicationFixture()
+
+	target := clusterables.NewMockClusterable(clusterables.PostKind)
+
+	cluster := domain_clusters.NewMockCluster(
+		target,
+		clusterables.PostKind,
+		[]uuid.UUID{uuid.New()},
+	)
+
+	fixture.clusterables.FindByKindAfterValue = []clusterables.Clusterable{
+		target,
+	}
+
 	fixture.detector.DetectValue = []domain_clusters.Cluster{
 		cluster,
 	}
+
 	fixture.repository.SaveErr = errTest
 
-	err := fixture.application.RebuildPostClusters()
+	err := fixture.application.RebuildPostClusters(
+		context.Background(),
+	)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected save error, got %v", err)
+		t.Fatalf("expected error, got %v", err)
 	}
 }
 
 func assertRebuildKind(
 	t *testing.T,
 	kind clusterables.Kind,
-	rebuild func(app Application) error,
+	rebuild func(ctx context.Context, app Application) error,
 ) {
 	t.Helper()
 
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
-	err := rebuild(fixture.application)
+	target := clusterables.NewMockClusterable(kind)
+	candidate := clusterables.NewMockClusterable(kind)
+
+	cluster := domain_clusters.NewMockCluster(
+		target,
+		kind,
+		[]uuid.UUID{candidate.Identifier()},
+	)
+
+	fixture.clusterables.FindByKindAfterValue = []clusterables.Clusterable{
+		target,
+	}
+
+	fixture.candidates.FindCandidatesValue = []clusterables.Clusterable{
+		candidate,
+	}
+
+	fixture.detector.DetectValue = []domain_clusters.Cluster{
+		cluster,
+	}
+
+	err := rebuild(ctx, fixture.application)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if fixture.clusterables.FindByKindAfterCalls != 1 {
-		t.Fatalf("expected 1 find by kind after call")
+	if fixture.clusterables.FindByKindAfterCalls != 2 {
+		t.Fatalf(
+			"expected 2 find by kind after calls, got %d",
+			fixture.clusterables.FindByKindAfterCalls,
+		)
+	}
+
+	if fixture.clusterables.LastContext != ctx {
+		t.Fatalf("expected context to be passed to clusterables")
 	}
 
 	if fixture.clusterables.LastKind != kind {
 		t.Fatalf("expected kind %s, got %s", kind, fixture.clusterables.LastKind)
+	}
+
+	if fixture.clusterables.LastAmount != testRebuildBatchSize {
+		t.Fatalf(
+			"expected rebuild batch size %d, got %d",
+			testRebuildBatchSize,
+			fixture.clusterables.LastAmount,
+		)
+	}
+
+	if fixture.candidates.FindCandidatesCalls != 1 {
+		t.Fatalf("expected 1 find candidates call")
+	}
+
+	if fixture.candidates.LastContext != ctx {
+		t.Fatalf("expected context to be passed to candidates")
+	}
+
+	if fixture.candidates.LastTarget != target {
+		t.Fatalf("expected target to be passed to candidates")
+	}
+
+	if fixture.candidates.LastKind != kind {
+		t.Fatalf("expected kind %s, got %s", kind, fixture.candidates.LastKind)
+	}
+
+	if fixture.candidates.LastAmount != testCandidateAmount {
+		t.Fatalf(
+			"expected candidate amount %d, got %d",
+			testCandidateAmount,
+			fixture.candidates.LastAmount,
+		)
+	}
+
+	if fixture.detector.DetectCalls != 1 {
+		t.Fatalf("expected 1 detect call")
+	}
+
+	if fixture.detector.LastContext != ctx {
+		t.Fatalf("expected context to be passed to detector")
+	}
+
+	if fixture.detector.LastTarget != target {
+		t.Fatalf("expected target to be passed to detector")
+	}
+
+	if len(fixture.detector.LastMembers) != 1 ||
+		fixture.detector.LastMembers[0] != candidate {
+		t.Fatalf("expected candidates to be passed to detector")
+	}
+
+	if fixture.repository.SaveCalls != 1 {
+		t.Fatalf("expected 1 save call")
+	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed to repository")
+	}
+
+	if fixture.repository.LastCluster != cluster {
+		t.Fatalf("expected cluster to be saved")
 	}
 }

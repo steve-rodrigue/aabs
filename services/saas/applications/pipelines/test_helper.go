@@ -1,7 +1,7 @@
 package pipelines
 
 import (
-	"github.com/steve-rodrigue/aabs/services/saas/domain/posts"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 )
 
 func NewMockPipelineApplication() *MockPipelineApplication {

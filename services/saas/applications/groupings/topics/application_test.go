@@ -6,12 +6,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/steve-rodrigue/aabs/services/saas/domain/communities"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
+	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
 	domain_participations "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 	domain_topics "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/topics"
-	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/posts"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/users"
 )
 
 var errTest = errors.New("test error")

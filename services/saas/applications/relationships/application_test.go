@@ -1,6 +1,7 @@
 package relationships
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -11,16 +12,6 @@ import (
 )
 
 var errTest = errors.New("test error")
-
-func TestComparables(t *testing.T) {
-	fixture := newApplicationFixture()
-
-	result := fixture.application.Comparables()
-
-	if result != fixture.comparables {
-		t.Fatalf("expected comparables application")
-	}
-}
 
 func TestBuild(t *testing.T) {
 	fixture := newApplicationFixture()
@@ -76,8 +67,9 @@ func TestBuildReturnsError(t *testing.T) {
 
 func TestSync(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
-	err := fixture.application.Sync([]domain_relationships.Relationship{
+	err := fixture.application.Sync(ctx, []domain_relationships.Relationship{
 		domain_relationships.NewMockRelationship(),
 		domain_relationships.NewMockRelationship(),
 	})
@@ -89,13 +81,19 @@ func TestSync(t *testing.T) {
 	if fixture.repository.SaveCalls != 2 {
 		t.Fatalf("expected 2 save calls, got %d", fixture.repository.SaveCalls)
 	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
 }
 
 func TestSyncReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
+
 	fixture.repository.SaveErr = errTest
 
-	err := fixture.application.Sync([]domain_relationships.Relationship{
+	err := fixture.application.Sync(ctx, []domain_relationships.Relationship{
 		domain_relationships.NewMockRelationship(),
 	})
 
@@ -106,13 +104,14 @@ func TestSyncReturnsError(t *testing.T) {
 
 func TestFind(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
 	relationship := domain_relationships.NewMockRelationship()
 	fixture.repository.FindValue = []domain_relationships.Relationship{
 		relationship,
 	}
 
-	result, err := fixture.application.Find(0, 25)
+	result, err := fixture.application.Find(ctx, 0, 25)
 
 	if err != nil {
 		t.Fatal(err)
@@ -122,6 +121,18 @@ func TestFind(t *testing.T) {
 		t.Fatalf("expected 1 find call")
 	}
 
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
+	if fixture.repository.LastIndex != 0 {
+		t.Fatalf("expected index 0")
+	}
+
+	if fixture.repository.LastAmount != 25 {
+		t.Fatalf("expected amount 25")
+	}
+
 	if len(result) != 1 || result[0] != relationship {
 		t.Fatalf("expected relationship result")
 	}
@@ -129,9 +140,11 @@ func TestFind(t *testing.T) {
 
 func TestFindReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
+
 	fixture.repository.FindErr = errTest
 
-	_, err := fixture.application.Find(0, 25)
+	_, err := fixture.application.Find(ctx, 0, 25)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected find error, got %v", err)
@@ -140,11 +153,12 @@ func TestFindReturnsError(t *testing.T) {
 
 func TestFindByID(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
 	relationship := domain_relationships.NewMockRelationship()
 	fixture.repository.Items[relationship.Identifier()] = relationship
 
-	result, err := fixture.application.FindByID(relationship.Identifier())
+	result, err := fixture.application.FindByID(ctx, relationship.Identifier())
 
 	if err != nil {
 		t.Fatal(err)
@@ -154,6 +168,14 @@ func TestFindByID(t *testing.T) {
 		t.Fatalf("expected 1 find by id call")
 	}
 
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
+	if fixture.repository.LastID != relationship.Identifier() {
+		t.Fatalf("expected id to be passed")
+	}
+
 	if result != relationship {
 		t.Fatalf("expected relationship result")
 	}
@@ -161,9 +183,11 @@ func TestFindByID(t *testing.T) {
 
 func TestFindByIDReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
+
 	fixture.repository.FindByIDErr = errTest
 
-	_, err := fixture.application.FindByID(uuid.New())
+	_, err := fixture.application.FindByID(ctx, uuid.New())
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected find by id error, got %v", err)
@@ -172,6 +196,7 @@ func TestFindByIDReturnsError(t *testing.T) {
 
 func TestFindAfter(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
 	cursor := uuid.New()
 	relationship := domain_relationships.NewMockRelationship()
@@ -180,7 +205,7 @@ func TestFindAfter(t *testing.T) {
 		relationship,
 	}
 
-	result, err := fixture.application.FindAfter(cursor, 25)
+	result, err := fixture.application.FindAfter(ctx, cursor, 25)
 
 	if err != nil {
 		t.Fatal(err)
@@ -190,6 +215,18 @@ func TestFindAfter(t *testing.T) {
 		t.Fatalf("expected 1 find after call")
 	}
 
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
+	if fixture.repository.LastCursor != cursor {
+		t.Fatalf("expected cursor to be passed")
+	}
+
+	if fixture.repository.LastAmount != 25 {
+		t.Fatalf("expected amount 25")
+	}
+
 	if len(result) != 1 || result[0] != relationship {
 		t.Fatalf("expected relationship result")
 	}
@@ -197,9 +234,11 @@ func TestFindAfter(t *testing.T) {
 
 func TestFindAfterReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
+
 	fixture.repository.FindAfterErr = errTest
 
-	_, err := fixture.application.FindAfter(uuid.New(), 25)
+	_, err := fixture.application.FindAfter(ctx, uuid.New(), 25)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected find after error, got %v", err)
@@ -208,9 +247,11 @@ func TestFindAfterReturnsError(t *testing.T) {
 
 func TestCount(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
+
 	fixture.repository.CountValue = 123
 
-	result, err := fixture.application.Count()
+	result, err := fixture.application.Count(ctx)
 
 	if err != nil {
 		t.Fatal(err)
@@ -220,6 +261,10 @@ func TestCount(t *testing.T) {
 		t.Fatalf("expected 1 count call")
 	}
 
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
 	if result != 123 {
 		t.Fatalf("expected count 123, got %d", result)
 	}
@@ -227,9 +272,11 @@ func TestCount(t *testing.T) {
 
 func TestCountReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
+
 	fixture.repository.CountErr = errTest
 
-	_, err := fixture.application.Count()
+	_, err := fixture.application.Count(ctx)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected count error, got %v", err)
@@ -238,6 +285,7 @@ func TestCountReturnsError(t *testing.T) {
 
 func TestRelationshipsBySource(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
 	id := uuid.New()
 	relationship := domain_relationships.NewMockRelationship()
@@ -246,7 +294,7 @@ func TestRelationshipsBySource(t *testing.T) {
 		relationship,
 	}
 
-	result, err := fixture.application.RelationshipsBySource(id)
+	result, err := fixture.application.RelationshipsBySource(ctx, id)
 
 	if err != nil {
 		t.Fatal(err)
@@ -256,6 +304,14 @@ func TestRelationshipsBySource(t *testing.T) {
 		t.Fatalf("expected 1 find by source id call")
 	}
 
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
+	if fixture.repository.LastSourceID != id {
+		t.Fatalf("expected source id to be passed")
+	}
+
 	if len(result) != 1 || result[0] != relationship {
 		t.Fatalf("expected relationship result")
 	}
@@ -263,9 +319,11 @@ func TestRelationshipsBySource(t *testing.T) {
 
 func TestRelationshipsBySourceReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
+
 	fixture.repository.FindBySourceIDErr = errTest
 
-	_, err := fixture.application.RelationshipsBySource(uuid.New())
+	_, err := fixture.application.RelationshipsBySource(ctx, uuid.New())
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected source error, got %v", err)
@@ -274,6 +332,7 @@ func TestRelationshipsBySourceReturnsError(t *testing.T) {
 
 func TestRelationshipsByTarget(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
 	id := uuid.New()
 	relationship := domain_relationships.NewMockRelationship()
@@ -282,7 +341,7 @@ func TestRelationshipsByTarget(t *testing.T) {
 		relationship,
 	}
 
-	result, err := fixture.application.RelationshipsByTarget(id)
+	result, err := fixture.application.RelationshipsByTarget(ctx, id)
 
 	if err != nil {
 		t.Fatal(err)
@@ -292,6 +351,14 @@ func TestRelationshipsByTarget(t *testing.T) {
 		t.Fatalf("expected 1 find by target id call")
 	}
 
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
+	if fixture.repository.LastTargetID != id {
+		t.Fatalf("expected target id to be passed")
+	}
+
 	if len(result) != 1 || result[0] != relationship {
 		t.Fatalf("expected relationship result")
 	}
@@ -299,9 +366,11 @@ func TestRelationshipsByTarget(t *testing.T) {
 
 func TestRelationshipsByTargetReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
+
 	fixture.repository.FindByTargetIDErr = errTest
 
-	_, err := fixture.application.RelationshipsByTarget(uuid.New())
+	_, err := fixture.application.RelationshipsByTarget(ctx, uuid.New())
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected target error, got %v", err)
@@ -310,6 +379,7 @@ func TestRelationshipsByTargetReturnsError(t *testing.T) {
 
 func TestRebuildRelationships(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
 	source := relatables.NewMockRelatable(uuid.New(), relatables.PostKind)
 	target := relatables.NewMockRelatable(uuid.New(), relatables.TopicKind)
@@ -325,34 +395,64 @@ func TestRebuildRelationships(t *testing.T) {
 		relationship,
 	}
 
-	err := fixture.application.RebuildRelationships()
+	err := fixture.application.RebuildRelationships(ctx)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if fixture.relatables.FindAfterCalls != 2 {
-		t.Fatalf("expected 2 find after calls, got %d", fixture.relatables.FindAfterCalls)
+		t.Fatalf(
+			"expected 2 find after calls, got %d",
+			fixture.relatables.FindAfterCalls,
+		)
+	}
+
+	if fixture.relatables.LastContext != ctx {
+		t.Fatalf("expected context to be passed to relatables")
 	}
 
 	if fixture.candidates.FindCandidatesCalls != 1 {
 		t.Fatalf("expected 1 find candidates call")
 	}
 
+	if fixture.candidates.LastContext != ctx {
+		t.Fatalf("expected context to be passed to candidates")
+	}
+
+	if fixture.candidates.LastSource != source {
+		t.Fatalf("expected source to be passed to candidates")
+	}
+
 	if fixture.builder.BuildCalls != 1 {
 		t.Fatalf("expected 1 build call")
+	}
+
+	if fixture.builder.LastSource != source {
+		t.Fatalf("expected source to be passed to builder")
+	}
+
+	if len(fixture.builder.LastTargets) != 1 ||
+		fixture.builder.LastTargets[0] != target {
+		t.Fatalf("expected target to be passed to builder")
 	}
 
 	if fixture.repository.SaveCalls != 1 {
 		t.Fatalf("expected 1 save call")
 	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed to repository")
+	}
 }
 
 func TestRebuildRelationshipsReturnsRelatableError(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
+
 	fixture.relatables.FindAfterErr = errTest
 
-	err := fixture.application.RebuildRelationships()
+	err := fixture.application.RebuildRelationships(ctx)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected relatable error, got %v", err)
@@ -361,13 +461,14 @@ func TestRebuildRelationshipsReturnsRelatableError(t *testing.T) {
 
 func TestRebuildRelationshipsReturnsCandidateError(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
 	fixture.relatables.FindAfterValue = []relatables.Relatable{
 		relatables.NewMockRelatable(uuid.New(), relatables.PostKind),
 	}
 	fixture.candidates.FindCandidatesErr = errTest
 
-	err := fixture.application.RebuildRelationships()
+	err := fixture.application.RebuildRelationships(ctx)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected candidate error, got %v", err)
@@ -376,13 +477,14 @@ func TestRebuildRelationshipsReturnsCandidateError(t *testing.T) {
 
 func TestRebuildRelationshipsReturnsBuilderError(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
 	fixture.relatables.FindAfterValue = []relatables.Relatable{
 		relatables.NewMockRelatable(uuid.New(), relatables.PostKind),
 	}
 	fixture.builder.BuildErr = errTest
 
-	err := fixture.application.RebuildRelationships()
+	err := fixture.application.RebuildRelationships(ctx)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected builder error, got %v", err)
@@ -391,6 +493,7 @@ func TestRebuildRelationshipsReturnsBuilderError(t *testing.T) {
 
 func TestRebuildRelationshipsReturnsSyncError(t *testing.T) {
 	fixture := newApplicationFixture()
+	ctx := context.Background()
 
 	fixture.relatables.FindAfterValue = []relatables.Relatable{
 		relatables.NewMockRelatable(uuid.New(), relatables.PostKind),
@@ -400,7 +503,7 @@ func TestRebuildRelationshipsReturnsSyncError(t *testing.T) {
 	}
 	fixture.repository.SaveErr = errTest
 
-	err := fixture.application.RebuildRelationships()
+	err := fixture.application.RebuildRelationships(ctx)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected sync error, got %v", err)

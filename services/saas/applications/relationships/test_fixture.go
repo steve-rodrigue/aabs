@@ -1,44 +1,45 @@
 package relationships
 
 import (
-	relationship_comparables "github.com/steve-rodrigue/aabs/services/saas/applications/relationships/comparables"
 	domain_relationships "github.com/steve-rodrigue/aabs/services/saas/domain/relationships"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/builders"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/comparables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/relatables"
 )
 
 type applicationFixture struct {
 	application Application
 
-	repository  *domain_relationships.MockRelationshipRepository
-	builder     *domain_relationships.MockRelationshipBuilder
-	relatables  *relatables.MockRelatableRepository
-	candidates  *relatables.MockCandidateRepository
-	comparables *relationship_comparables.MockComparablesApplication
+	repository *domain_relationships.MockRelationshipRepository
+	builder    *builders.MockBuilder
+	relatables *relatables.MockRelatableRepository
+	candidates *relatables.MockCandidateRepository
+	comparator *comparables.MockComparator
 }
 
 func newApplicationFixture() *applicationFixture {
 	repository := domain_relationships.NewMockRelationshipRepository()
-	builder := domain_relationships.NewMockRelationshipBuilder()
+	builder := builders.NewMockBuilder()
 	relatableRepository := relatables.NewMockRelatableRepository()
 	candidateRepository := relatables.NewMockCandidateRepository()
-	comparables := relationship_comparables.NewMockComparablesApplication()
+	comparator := comparables.NewMockComparator()
 
 	application := New(
 		repository,
 		builder,
 		relatableRepository,
 		candidateRepository,
-		comparables,
+		comparator,
 		25,
 	)
 
 	return &applicationFixture{
 		application: application,
 
-		repository:  repository,
-		builder:     builder,
-		relatables:  relatableRepository,
-		candidates:  candidateRepository,
-		comparables: comparables,
+		repository: repository,
+		builder:    builder,
+		relatables: relatableRepository,
+		candidates: candidateRepository,
+		comparator: comparator,
 	}
 }

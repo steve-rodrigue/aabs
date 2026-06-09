@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/posts"
+	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	domain_searches "github.com/steve-rodrigue/aabs/services/saas/domain/searches"
 )
 

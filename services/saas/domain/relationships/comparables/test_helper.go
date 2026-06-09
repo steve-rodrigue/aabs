@@ -34,7 +34,10 @@ func (comparable *MockComparable) RelationshipKind() relatables.Kind {
 }
 
 func (comparable *MockComparable) Vector() []float32 {
-	return comparable.vector
+	out := make([]float32, len(comparable.vector))
+	copy(out, comparable.vector)
+
+	return out
 }
 
 func NewMockComparator() *MockComparator {

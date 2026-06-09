@@ -3,9 +3,9 @@ package narratives
 import (
 	"github.com/google/uuid"
 
-	"github.com/steve-rodrigue/aabs/services/saas/domain/communities"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
 	domain_narratives "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/narratives"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/users"
 )
 
 func NewMockNarrativesApplication() *MockNarrativesApplication {

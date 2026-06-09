@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/posts"
 )
 
 func NewMockCampaign(

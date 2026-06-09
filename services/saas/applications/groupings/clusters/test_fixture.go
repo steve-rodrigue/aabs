@@ -5,6 +5,9 @@ import (
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 )
 
+const testRebuildBatchSize = 25
+const testCandidateAmount = 10
+
 type applicationFixture struct {
 	application Application
 
@@ -25,6 +28,8 @@ func newApplicationFixture() *applicationFixture {
 		detector,
 		clusterableRepository,
 		candidateRepository,
+		testRebuildBatchSize,
+		testCandidateAmount,
 	)
 
 	return &applicationFixture{
