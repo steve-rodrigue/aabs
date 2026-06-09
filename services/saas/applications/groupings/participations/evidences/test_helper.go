@@ -1,6 +1,8 @@
 package evidences
 
 import (
+	"context"
+
 	"github.com/google/uuid"
 
 	domain_evidences "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/evidences"
@@ -31,44 +33,70 @@ type MockEvidencesApplication struct {
 	FindByTargetCalls int
 	FindByTargetErr   error
 	FindByTargetValue []domain_evidences.Evidence
+
+	LastContext       context.Context
+	LastID            uuid.UUID
+	LastParticipation uuid.UUID
+	LastPost          uuid.UUID
+	LastParticipant   participatables.Participatable
+	LastTarget        participatables.Participatable
 }
 
 func (application *MockEvidencesApplication) FindByID(
+	ctx context.Context,
 	id uuid.UUID,
 ) (domain_evidences.Evidence, error) {
 	application.FindByIDCalls++
+	application.LastContext = ctx
+	application.LastID = id
 
 	return application.FindByIDValue, application.FindByIDErr
 }
 
 func (application *MockEvidencesApplication) FindByParticipation(
+	ctx context.Context,
 	participation uuid.UUID,
 ) ([]domain_evidences.Evidence, error) {
 	application.FindByParticipationCalls++
+	application.LastContext = ctx
+	application.LastParticipation = participation
 
-	return application.FindByParticipationValue, application.FindByParticipationErr
+	return application.FindByParticipationValue,
+		application.FindByParticipationErr
 }
 
 func (application *MockEvidencesApplication) FindByPost(
+	ctx context.Context,
 	post uuid.UUID,
 ) ([]domain_evidences.Evidence, error) {
 	application.FindByPostCalls++
+	application.LastContext = ctx
+	application.LastPost = post
 
-	return application.FindByPostValue, application.FindByPostErr
+	return application.FindByPostValue,
+		application.FindByPostErr
 }
 
 func (application *MockEvidencesApplication) FindByParticipant(
+	ctx context.Context,
 	participant participatables.Participatable,
 ) ([]domain_evidences.Evidence, error) {
 	application.FindByParticipantCalls++
+	application.LastContext = ctx
+	application.LastParticipant = participant
 
-	return application.FindByParticipantValue, application.FindByParticipantErr
+	return application.FindByParticipantValue,
+		application.FindByParticipantErr
 }
 
 func (application *MockEvidencesApplication) FindByTarget(
+	ctx context.Context,
 	target participatables.Participatable,
 ) ([]domain_evidences.Evidence, error) {
 	application.FindByTargetCalls++
+	application.LastContext = ctx
+	application.LastTarget = target
 
-	return application.FindByTargetValue, application.FindByTargetErr
+	return application.FindByTargetValue,
+		application.FindByTargetErr
 }

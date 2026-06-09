@@ -1,6 +1,8 @@
 package evidences
 
 import (
+	"context"
+
 	"github.com/google/uuid"
 
 	domain_evidences "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/evidences"
@@ -21,35 +23,40 @@ func createApplication(
 
 // FindByID finds evidence by id
 func (app *application) FindByID(
+	ctx context.Context,
 	id uuid.UUID,
 ) (domain_evidences.Evidence, error) {
-	return app.repository.FindByID(id)
+	return app.repository.FindByID(ctx, id)
 }
 
 // FindByParticipation finds evidences by participation id
 func (app *application) FindByParticipation(
+	ctx context.Context,
 	participation uuid.UUID,
 ) ([]domain_evidences.Evidence, error) {
-	return app.repository.FindByParticipation(participation)
+	return app.repository.FindByParticipation(ctx, participation)
 }
 
 // FindByPost finds evidences by post id
 func (app *application) FindByPost(
+	ctx context.Context,
 	post uuid.UUID,
 ) ([]domain_evidences.Evidence, error) {
-	return app.repository.FindByPost(post)
+	return app.repository.FindByPost(ctx, post)
 }
 
 // FindByParticipant finds evidences by participant
 func (app *application) FindByParticipant(
+	ctx context.Context,
 	participant participatables.Participatable,
 ) ([]domain_evidences.Evidence, error) {
-	return app.repository.FindByParticipant(participant)
+	return app.repository.FindByParticipant(ctx, participant)
 }
 
 // FindByTarget finds evidences by target
 func (app *application) FindByTarget(
+	ctx context.Context,
 	target participatables.Participatable,
 ) ([]domain_evidences.Evidence, error) {
-	return app.repository.FindByTarget(target)
+	return app.repository.FindByTarget(ctx, target)
 }

@@ -7,8 +7,11 @@ import (
 	domain_platforms "github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	domain_users "github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
+	domain_campaigns "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/campaigns"
 	domain_clusters "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
+	domain_narratives "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/narratives"
+	domain_assignments "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/narratives/assignments"
 	domain_participations "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations"
 	domain_evidences "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/evidences"
 	domain_topics "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/topics"
@@ -129,5 +132,57 @@ func NewGroupingsParticipationsEvidenceRepository(
 		adapter:        adapter,
 		participations: participations,
 		posts:          posts,
+	}
+}
+
+// NewGroupingsParticipationRepository creates a new postgresql participation repository
+func NewGroupingsParticipationRepository(
+	pool *pgxpool.Pool,
+	adapter domain_participations.Adapter,
+) domain_participations.Repository {
+	return &groupingsParticipationRepository{
+		pool:    pool,
+		adapter: adapter,
+	}
+}
+
+// NewGroupingsNarrativeRepository creates a new postgresql narrative repository
+func NewGroupingsNarrativeRepository(
+	pool *pgxpool.Pool,
+	adapter domain_narratives.Adapter,
+	clusters domain_clusters.Repository,
+) domain_narratives.Repository {
+	return &groupingsNarrativeRepository{
+		pool:     pool,
+		adapter:  adapter,
+		clusters: clusters,
+	}
+}
+
+// NewGroupingsCampaignRepository creates a new postgresql campaign repository
+func NewGroupingsCampaignRepository(
+	pool *pgxpool.Pool,
+	adapter domain_campaigns.Adapter,
+	clusters domain_clusters.Repository,
+) domain_campaigns.Repository {
+	return &groupingsCampaignRepository{
+		pool:     pool,
+		adapter:  adapter,
+		clusters: clusters,
+	}
+}
+
+// NewGroupingsAssignmentRepository creates a new postgresql assignment repository
+func NewGroupingsAssignmentRepository(
+	pool *pgxpool.Pool,
+	adapter domain_assignments.Adapter,
+	narratives domain_narratives.Repository,
+	campaigns domain_campaigns.Repository,
+) domain_assignments.Repository {
+	return &groupingsAssignmentRepository{
+		pool:       pool,
+		adapter:    adapter,
+		narratives: narratives,
+		campaigns:  campaigns,
 	}
 }

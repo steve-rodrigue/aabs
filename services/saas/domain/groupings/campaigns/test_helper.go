@@ -1,12 +1,15 @@
 package campaigns
 
 import (
+	"context"
 	"sort"
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
@@ -15,15 +18,26 @@ func NewMockCampaign(
 	description string,
 ) Campaign {
 	return &MockCampaign{
-		id:                uuid.New(),
-		participationKind: participatables.CampaignKind,
-		name:              name,
-		description:       description,
+		ID:                     uuid.New(),
+		ParticipationKindValue: participatables.CampaignKind,
+		NameValue:              name,
+		DescriptionValue:       description,
+		CreatedOnValue:         time.Now().UTC(),
 	}
 }
 
-func NewMockCampaignClassifier() *MockCampaignClassifier {
-	return &MockCampaignClassifier{}
+func NewMockCampaignWithID(
+	id uuid.UUID,
+	name string,
+	description string,
+) Campaign {
+	return &MockCampaign{
+		ID:                     id,
+		ParticipationKindValue: participatables.CampaignKind,
+		NameValue:              name,
+		DescriptionValue:       description,
+		CreatedOnValue:         time.Now().UTC(),
+	}
 }
 
 func NewMockCampaignRepository() *MockCampaignRepository {
@@ -32,48 +46,98 @@ func NewMockCampaignRepository() *MockCampaignRepository {
 	}
 }
 
+func NewMockCampaignAdapter() *MockCampaignAdapter {
+	return &MockCampaignAdapter{}
+}
+
+func NewMockCampaignClassifier() *MockCampaignClassifier {
+	return &MockCampaignClassifier{}
+}
+
+func NewMockCampaignDetector() *MockCampaignDetector {
+	return &MockCampaignDetector{}
+}
+
 type MockCampaign struct {
-	id                uuid.UUID
-	participationKind participatables.Kind
+	ID uuid.UUID
 
-	name        string
-	description string
+	ParticipationKindValue participatables.Kind
 
-	cluster    clusters.Cluster
-	postCount  int
-	confidence float64
+	NameValue        string
+	DescriptionValue string
+
+	ClusterValue clusters.Cluster
+
+	PostCountValue  int
+	ConfidenceValue float64
+
+	CreatedOnValue time.Time
 }
 
 func (campaign *MockCampaign) Identifier() uuid.UUID {
-	return campaign.id
+	return campaign.ID
 }
 
 func (campaign *MockCampaign) ParticipationKind() participatables.Kind {
-	return campaign.participationKind
+	return campaign.ParticipationKindValue
 }
 
 func (campaign *MockCampaign) Name() string {
-	return campaign.name
+	return campaign.NameValue
 }
 
 func (campaign *MockCampaign) Description() string {
-	return campaign.description
+	return campaign.DescriptionValue
 }
 
 func (campaign *MockCampaign) Cluster() clusters.Cluster {
-	return campaign.cluster
+	return campaign.ClusterValue
 }
 
 func (campaign *MockCampaign) PostCount() int {
-	return campaign.postCount
+	return campaign.PostCountValue
 }
 
 func (campaign *MockCampaign) Confidence() float64 {
-	return campaign.confidence
+	return campaign.ConfidenceValue
 }
 
 func (campaign *MockCampaign) CreatedOn() time.Time {
-	return time.Time{}
+	return campaign.CreatedOnValue
+}
+
+type MockCampaignAdapter struct {
+	ToDomainCalls int
+	ToDomainErr   error
+	ToDomainValue Campaign
+
+	LastInput CampaignInput
+}
+
+func (adapter *MockCampaignAdapter) ToDomain(
+	input CampaignInput,
+) (Campaign, error) {
+	adapter.ToDomainCalls++
+	adapter.LastInput = input
+
+	if adapter.ToDomainErr != nil {
+		return nil, adapter.ToDomainErr
+	}
+
+	if adapter.ToDomainValue != nil {
+		return adapter.ToDomainValue, nil
+	}
+
+	return &MockCampaign{
+		ID:                     input.Identifier,
+		ParticipationKindValue: participatables.CampaignKind,
+		NameValue:              input.Name,
+		DescriptionValue:       input.Description,
+		ClusterValue:           input.Cluster,
+		PostCountValue:         input.PostCount,
+		ConfidenceValue:        input.Confidence,
+		CreatedOnValue:         input.CreatedOn,
+	}, nil
 }
 
 type MockCampaignRepository struct {
@@ -84,6 +148,7 @@ type MockCampaignRepository struct {
 
 	FindByIDCalls int
 	FindByIDErr   error
+	FindByIDValue Campaign
 
 	FindByNameCalls int
 	FindByNameErr   error
@@ -100,32 +165,61 @@ type MockCampaignRepository struct {
 	CountCalls int
 	CountErr   error
 	CountValue int64
+
+	LastContext context.Context
+	LastSaved   Campaign
+	LastID      uuid.UUID
+	LastName    string
+	LastIndex   int
+	LastAmount  int
+	LastCursor  uuid.UUID
 }
 
 func (repository *MockCampaignRepository) Save(
+	ctx context.Context,
 	campaign Campaign,
 ) error {
 	repository.SaveCalls++
+	repository.LastContext = ctx
+	repository.LastSaved = campaign
+
+	if repository.Items != nil && campaign != nil {
+		repository.Items[campaign.Identifier()] = campaign
+	}
 
 	return repository.SaveErr
 }
 
 func (repository *MockCampaignRepository) FindByID(
+	ctx context.Context,
 	id uuid.UUID,
 ) (Campaign, error) {
 	repository.FindByIDCalls++
+	repository.LastContext = ctx
+	repository.LastID = id
 
 	if repository.FindByIDErr != nil {
 		return nil, repository.FindByIDErr
+	}
+
+	if repository.FindByIDValue != nil {
+		return repository.FindByIDValue, nil
+	}
+
+	if repository.Items == nil {
+		return nil, nil
 	}
 
 	return repository.Items[id], nil
 }
 
 func (repository *MockCampaignRepository) FindByName(
+	ctx context.Context,
 	name string,
 ) (Campaign, error) {
 	repository.FindByNameCalls++
+	repository.LastContext = ctx
+	repository.LastName = name
 
 	if repository.FindByNameErr != nil {
 		return nil, repository.FindByNameErr
@@ -145,10 +239,14 @@ func (repository *MockCampaignRepository) FindByName(
 }
 
 func (repository *MockCampaignRepository) Find(
+	ctx context.Context,
 	index int,
 	amount int,
 ) ([]Campaign, error) {
 	repository.FindCalls++
+	repository.LastContext = ctx
+	repository.LastIndex = index
+	repository.LastAmount = amount
 
 	if repository.FindErr != nil {
 		return nil, repository.FindErr
@@ -173,10 +271,14 @@ func (repository *MockCampaignRepository) Find(
 }
 
 func (repository *MockCampaignRepository) FindAfter(
+	ctx context.Context,
 	cursor uuid.UUID,
 	amount int,
 ) ([]Campaign, error) {
 	repository.FindAfterCalls++
+	repository.LastContext = ctx
+	repository.LastCursor = cursor
+	repository.LastAmount = amount
 
 	if repository.FindAfterErr != nil {
 		return nil, repository.FindAfterErr
@@ -211,8 +313,11 @@ func (repository *MockCampaignRepository) FindAfter(
 	return items[start:end], nil
 }
 
-func (repository *MockCampaignRepository) Count() (int64, error) {
+func (repository *MockCampaignRepository) Count(
+	ctx context.Context,
+) (int64, error) {
 	repository.CountCalls++
+	repository.LastContext = ctx
 
 	if repository.CountErr != nil {
 		return 0, repository.CountErr
@@ -243,16 +348,44 @@ func (repository *MockCampaignRepository) sortedCampaigns() []Campaign {
 type MockCampaignClassifier struct {
 	ClassifyCalls int
 	ClassifyErr   error
-	ClassifyValue Campaign
 
-	LastPost posts.Post
+	ClassifyValue      Campaign
+	ClassifyConfidence float64
+
+	LastContext context.Context
+	LastPost    posts.Post
 }
 
 func (classifier *MockCampaignClassifier) Classify(
+	ctx context.Context,
 	post posts.Post,
 ) (Campaign, float64, error) {
 	classifier.ClassifyCalls++
+	classifier.LastContext = ctx
 	classifier.LastPost = post
 
-	return classifier.ClassifyValue, 1.0, classifier.ClassifyErr
+	return classifier.ClassifyValue,
+		classifier.ClassifyConfidence,
+		classifier.ClassifyErr
+}
+
+type MockCampaignDetector struct {
+	DetectCalls int
+	DetectErr   error
+	DetectValue []Campaign
+
+	LastContext    context.Context
+	LastCandidates []clusterables.Clusterable
+}
+
+func (detector *MockCampaignDetector) Detect(
+	ctx context.Context,
+	candidates []clusterables.Clusterable,
+) ([]Campaign, error) {
+	detector.DetectCalls++
+	detector.LastContext = ctx
+	detector.LastCandidates = candidates
+
+	return detector.DetectValue,
+		detector.DetectErr
 }

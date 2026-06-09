@@ -1,6 +1,7 @@
 package evidences
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -15,12 +16,13 @@ var errTest = errors.New("test error")
 func TestFindByID(t *testing.T) {
 	fixture := newApplicationFixture()
 
+	ctx := context.Background()
 	id := uuid.New()
 	evidence := domain_evidences.NewMockEvidence()
 
 	fixture.repository.FindByIDValue = evidence
 
-	result, err := fixture.application.FindByID(id)
+	result, err := fixture.application.FindByID(ctx, id)
 
 	if err != nil {
 		t.Fatal(err)
@@ -28,6 +30,14 @@ func TestFindByID(t *testing.T) {
 
 	if fixture.repository.FindByIDCalls != 1 {
 		t.Fatalf("expected 1 find by id call")
+	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context")
+	}
+
+	if fixture.repository.LastID != id {
+		t.Fatalf("expected id")
 	}
 
 	if result != evidence {
@@ -39,7 +49,10 @@ func TestFindByIDReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
 	fixture.repository.FindByIDErr = errTest
 
-	_, err := fixture.application.FindByID(uuid.New())
+	_, err := fixture.application.FindByID(
+		context.Background(),
+		uuid.New(),
+	)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected find by id error, got %v", err)
@@ -49,6 +62,7 @@ func TestFindByIDReturnsError(t *testing.T) {
 func TestFindByParticipation(t *testing.T) {
 	fixture := newApplicationFixture()
 
+	ctx := context.Background()
 	participation := uuid.New()
 	evidence := domain_evidences.NewMockEvidence()
 
@@ -56,7 +70,10 @@ func TestFindByParticipation(t *testing.T) {
 		evidence,
 	}
 
-	result, err := fixture.application.FindByParticipation(participation)
+	result, err := fixture.application.FindByParticipation(
+		ctx,
+		participation,
+	)
 
 	if err != nil {
 		t.Fatal(err)
@@ -64,6 +81,14 @@ func TestFindByParticipation(t *testing.T) {
 
 	if fixture.repository.FindByParticipationCalls != 1 {
 		t.Fatalf("expected 1 find by participation call")
+	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context")
+	}
+
+	if fixture.repository.LastParticipation != participation {
+		t.Fatalf("expected participation")
 	}
 
 	if len(result) != 1 || result[0] != evidence {
@@ -75,7 +100,10 @@ func TestFindByParticipationReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
 	fixture.repository.FindByParticipationErr = errTest
 
-	_, err := fixture.application.FindByParticipation(uuid.New())
+	_, err := fixture.application.FindByParticipation(
+		context.Background(),
+		uuid.New(),
+	)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected find by participation error, got %v", err)
@@ -85,6 +113,7 @@ func TestFindByParticipationReturnsError(t *testing.T) {
 func TestFindByPost(t *testing.T) {
 	fixture := newApplicationFixture()
 
+	ctx := context.Background()
 	post := uuid.New()
 	evidence := domain_evidences.NewMockEvidence()
 
@@ -92,7 +121,10 @@ func TestFindByPost(t *testing.T) {
 		evidence,
 	}
 
-	result, err := fixture.application.FindByPost(post)
+	result, err := fixture.application.FindByPost(
+		ctx,
+		post,
+	)
 
 	if err != nil {
 		t.Fatal(err)
@@ -100,6 +132,14 @@ func TestFindByPost(t *testing.T) {
 
 	if fixture.repository.FindByPostCalls != 1 {
 		t.Fatalf("expected 1 find by post call")
+	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context")
+	}
+
+	if fixture.repository.LastPost != post {
+		t.Fatalf("expected post")
 	}
 
 	if len(result) != 1 || result[0] != evidence {
@@ -111,7 +151,10 @@ func TestFindByPostReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
 	fixture.repository.FindByPostErr = errTest
 
-	_, err := fixture.application.FindByPost(uuid.New())
+	_, err := fixture.application.FindByPost(
+		context.Background(),
+		uuid.New(),
+	)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected find by post error, got %v", err)
@@ -120,6 +163,8 @@ func TestFindByPostReturnsError(t *testing.T) {
 
 func TestFindByParticipant(t *testing.T) {
 	fixture := newApplicationFixture()
+
+	ctx := context.Background()
 
 	participant := participatables.NewMockParticipatable(
 		uuid.New(),
@@ -132,7 +177,10 @@ func TestFindByParticipant(t *testing.T) {
 		evidence,
 	}
 
-	result, err := fixture.application.FindByParticipant(participant)
+	result, err := fixture.application.FindByParticipant(
+		ctx,
+		participant,
+	)
 
 	if err != nil {
 		t.Fatal(err)
@@ -140,6 +188,14 @@ func TestFindByParticipant(t *testing.T) {
 
 	if fixture.repository.FindByParticipantCalls != 1 {
 		t.Fatalf("expected 1 find by participant call")
+	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context")
+	}
+
+	if fixture.repository.LastParticipant != participant {
+		t.Fatalf("expected participant")
 	}
 
 	if len(result) != 1 || result[0] != evidence {
@@ -156,7 +212,10 @@ func TestFindByParticipantReturnsError(t *testing.T) {
 		participatables.UserKind,
 	)
 
-	_, err := fixture.application.FindByParticipant(participant)
+	_, err := fixture.application.FindByParticipant(
+		context.Background(),
+		participant,
+	)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected find by participant error, got %v", err)
@@ -165,6 +224,8 @@ func TestFindByParticipantReturnsError(t *testing.T) {
 
 func TestFindByTarget(t *testing.T) {
 	fixture := newApplicationFixture()
+
+	ctx := context.Background()
 
 	target := participatables.NewMockParticipatable(
 		uuid.New(),
@@ -177,7 +238,10 @@ func TestFindByTarget(t *testing.T) {
 		evidence,
 	}
 
-	result, err := fixture.application.FindByTarget(target)
+	result, err := fixture.application.FindByTarget(
+		ctx,
+		target,
+	)
 
 	if err != nil {
 		t.Fatal(err)
@@ -185,6 +249,14 @@ func TestFindByTarget(t *testing.T) {
 
 	if fixture.repository.FindByTargetCalls != 1 {
 		t.Fatalf("expected 1 find by target call")
+	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context")
+	}
+
+	if fixture.repository.LastTarget != target {
+		t.Fatalf("expected target")
 	}
 
 	if len(result) != 1 || result[0] != evidence {
@@ -201,7 +273,10 @@ func TestFindByTargetReturnsError(t *testing.T) {
 		participatables.CampaignKind,
 	)
 
-	_, err := fixture.application.FindByTarget(target)
+	_, err := fixture.application.FindByTarget(
+		context.Background(),
+		target,
+	)
 
 	if !errors.Is(err, errTest) {
 		t.Fatalf("expected find by target error, got %v", err)

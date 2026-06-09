@@ -15,7 +15,6 @@ type application struct {
 
 	participatableRepository participatables.Repository
 
-	evidenceRepository  domain_evidences.Repository
 	evidenceCalculator  domain_evidences.Calculator
 	evidenceApplication evidences.Application
 }

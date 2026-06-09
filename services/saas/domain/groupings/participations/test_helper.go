@@ -12,8 +12,8 @@ import (
 
 func NewMockParticipation() Participation {
 	return &MockParticipation{
-		id:         uuid.New(),
-		detectedOn: time.Now().UTC(),
+		ID:              uuid.New(),
+		DetectedOnValue: time.Now().UTC(),
 	}
 }
 
@@ -21,8 +21,8 @@ func NewMockParticipationWithID(
 	id uuid.UUID,
 ) Participation {
 	return &MockParticipation{
-		id:         id,
-		detectedOn: time.Now().UTC(),
+		ID:              id,
+		DetectedOnValue: time.Now().UTC(),
 	}
 }
 
@@ -31,10 +31,10 @@ func NewMockParticipationBetween(
 	target participatables.Participatable,
 ) Participation {
 	return &MockParticipation{
-		id:          uuid.New(),
-		participant: participant,
-		target:      target,
-		detectedOn:  time.Now().UTC(),
+		ID:               uuid.New(),
+		ParticipantValue: participant,
+		TargetValue:      target,
+		DetectedOnValue:  time.Now().UTC(),
 	}
 }
 
@@ -63,44 +63,44 @@ func NewMockParticipationAdapter() *MockParticipationAdapter {
 }
 
 type MockParticipation struct {
-	id uuid.UUID
+	ID uuid.UUID
 
-	participant participatables.Participatable
-	target      participatables.Participatable
+	ParticipantValue participatables.Participatable
+	TargetValue      participatables.Participatable
 
-	postCount      int
-	totalPostCount int
-	percentage     float64
+	PostCountValue      int
+	TotalPostCountValue int
+	PercentageValue     float64
 
-	detectedOn time.Time
+	DetectedOnValue time.Time
 }
 
 func (participation *MockParticipation) Identifier() uuid.UUID {
-	return participation.id
+	return participation.ID
 }
 
 func (participation *MockParticipation) Participant() participatables.Participatable {
-	return participation.participant
+	return participation.ParticipantValue
 }
 
 func (participation *MockParticipation) Target() participatables.Participatable {
-	return participation.target
+	return participation.TargetValue
 }
 
 func (participation *MockParticipation) PostCount() int {
-	return participation.postCount
+	return participation.PostCountValue
 }
 
 func (participation *MockParticipation) TotalPostCount() int {
-	return participation.totalPostCount
+	return participation.TotalPostCountValue
 }
 
 func (participation *MockParticipation) Percentage() float64 {
-	return participation.percentage
+	return participation.PercentageValue
 }
 
 func (participation *MockParticipation) DetectedOn() time.Time {
-	return participation.detectedOn
+	return participation.DetectedOnValue
 }
 
 type MockParticipationAdapter struct {
@@ -126,13 +126,13 @@ func (adapter *MockParticipationAdapter) ToDomain(
 	}
 
 	return &MockParticipation{
-		id:             input.Identifier,
-		participant:    input.Participant,
-		target:         input.Target,
-		postCount:      input.PostCount,
-		totalPostCount: input.TotalPostCount,
-		percentage:     input.Percentage,
-		detectedOn:     input.DetectedOn,
+		ID:                  input.Identifier,
+		ParticipantValue:    input.Participant,
+		TargetValue:         input.Target,
+		PostCountValue:      input.PostCount,
+		TotalPostCountValue: input.TotalPostCount,
+		PercentageValue:     input.Percentage,
+		DetectedOnValue:     input.DetectedOn,
 	}, nil
 }
 

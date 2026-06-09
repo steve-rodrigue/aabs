@@ -2,12 +2,28 @@ package participations
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
+
+var (
+	ErrInvalidParticipationIdentifier     = errors.New("invalid participation identifier")
+	ErrInvalidParticipationParticipant    = errors.New("invalid participation participant")
+	ErrInvalidParticipationTarget         = errors.New("invalid participation target")
+	ErrInvalidParticipationPostCount      = errors.New("invalid participation post count")
+	ErrInvalidParticipationTotalPostCount = errors.New("invalid participation total post count")
+	ErrInvalidParticipationPercentage     = errors.New("invalid participation percentage")
+	ErrInvalidParticipationDetectedOn     = errors.New("invalid participation detected on")
+)
+
+// NewAdapter creates a new adapter
+func NewAdapter() Adapter {
+	return &adapter{}
+}
 
 // ParticipationInput represents a participation input
 type ParticipationInput struct {

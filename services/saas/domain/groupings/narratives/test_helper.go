@@ -1,10 +1,12 @@
 package narratives
 
 import (
+	"context"
 	"sort"
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
@@ -14,10 +16,25 @@ func NewMockNarrative(
 	description string,
 ) *MockNarrative {
 	return &MockNarrative{
-		id:                uuid.New(),
-		participationKind: participatables.NarrativeKind,
-		name:              name,
-		description:       description,
+		ID:                     uuid.New(),
+		ParticipationKindValue: participatables.NarrativeKind,
+		NameValue:              name,
+		DescriptionValue:       description,
+		CreatedOnValue:         time.Now().UTC(),
+	}
+}
+
+func NewMockNarrativeWithID(
+	id uuid.UUID,
+	name string,
+	description string,
+) *MockNarrative {
+	return &MockNarrative{
+		ID:                     id,
+		ParticipationKindValue: participatables.NarrativeKind,
+		NameValue:              name,
+		DescriptionValue:       description,
+		CreatedOnValue:         time.Now().UTC(),
 	}
 }
 
@@ -27,42 +44,83 @@ func NewMockNarrativeRepository() *MockNarrativeRepository {
 	}
 }
 
+func NewMockNarrativeAdapter() *MockNarrativeAdapter {
+	return &MockNarrativeAdapter{}
+}
+
 type MockNarrative struct {
-	id                uuid.UUID
-	participationKind participatables.Kind
-	cluster           clusters.Cluster
-	name              string
-	description       string
+	ID uuid.UUID
+
+	ParticipationKindValue participatables.Kind
+
+	ClusterValue clusters.Cluster
+
+	NameValue        string
+	DescriptionValue string
+
+	CreatedOnValue time.Time
 }
 
 func (narrative *MockNarrative) SetCluster(
 	cluster clusters.Cluster,
 ) {
-	narrative.cluster = cluster
+	narrative.ClusterValue = cluster
 }
 
 func (narrative *MockNarrative) Identifier() uuid.UUID {
-	return narrative.id
+	return narrative.ID
 }
 
 func (narrative *MockNarrative) ParticipationKind() participatables.Kind {
-	return participatables.NarrativeKind
+	return narrative.ParticipationKindValue
 }
 
 func (narrative *MockNarrative) Cluster() clusters.Cluster {
-	return narrative.cluster
+	return narrative.ClusterValue
 }
 
 func (narrative *MockNarrative) Name() string {
-	return narrative.name
+	return narrative.NameValue
 }
 
 func (narrative *MockNarrative) Description() string {
-	return narrative.description
+	return narrative.DescriptionValue
 }
 
 func (narrative *MockNarrative) CreatedOn() time.Time {
-	return time.Time{}
+	return narrative.CreatedOnValue
+}
+
+type MockNarrativeAdapter struct {
+	ToDomainCalls int
+	ToDomainErr   error
+	ToDomainValue Narrative
+
+	LastInput NarrativeInput
+}
+
+func (adapter *MockNarrativeAdapter) ToDomain(
+	input NarrativeInput,
+) (Narrative, error) {
+	adapter.ToDomainCalls++
+	adapter.LastInput = input
+
+	if adapter.ToDomainErr != nil {
+		return nil, adapter.ToDomainErr
+	}
+
+	if adapter.ToDomainValue != nil {
+		return adapter.ToDomainValue, nil
+	}
+
+	return &MockNarrative{
+		ID:                     input.Identifier,
+		ParticipationKindValue: input.ParticipationKind,
+		ClusterValue:           input.Cluster,
+		NameValue:              input.Name,
+		DescriptionValue:       input.Description,
+		CreatedOnValue:         input.CreatedOn,
+	}, nil
 }
 
 type MockNarrativeRepository struct {
@@ -73,6 +131,7 @@ type MockNarrativeRepository struct {
 
 	FindByIDCalls int
 	FindByIDErr   error
+	FindByIDValue Narrative
 
 	FindCalls int
 	FindErr   error
@@ -89,33 +148,63 @@ type MockNarrativeRepository struct {
 	CountCalls int
 	CountErr   error
 	CountValue int64
+
+	LastContext context.Context
+	LastSaved   Narrative
+	LastID      uuid.UUID
+	LastName    string
+	LastIndex   int
+	LastAmount  int
+	LastCursor  uuid.UUID
 }
 
 func (repository *MockNarrativeRepository) Save(
+	ctx context.Context,
 	narrative Narrative,
 ) error {
 	repository.SaveCalls++
+	repository.LastContext = ctx
+	repository.LastSaved = narrative
+
+	if repository.Items != nil && narrative != nil {
+		repository.Items[narrative.Identifier()] = narrative
+	}
 
 	return repository.SaveErr
 }
 
 func (repository *MockNarrativeRepository) FindByID(
+	ctx context.Context,
 	id uuid.UUID,
 ) (Narrative, error) {
 	repository.FindByIDCalls++
+	repository.LastContext = ctx
+	repository.LastID = id
 
 	if repository.FindByIDErr != nil {
 		return nil, repository.FindByIDErr
+	}
+
+	if repository.FindByIDValue != nil {
+		return repository.FindByIDValue, nil
+	}
+
+	if repository.Items == nil {
+		return nil, nil
 	}
 
 	return repository.Items[id], nil
 }
 
 func (repository *MockNarrativeRepository) Find(
+	ctx context.Context,
 	index int,
 	amount int,
 ) ([]Narrative, error) {
 	repository.FindCalls++
+	repository.LastContext = ctx
+	repository.LastIndex = index
+	repository.LastAmount = amount
 
 	if repository.FindErr != nil {
 		return nil, repository.FindErr
@@ -140,9 +229,12 @@ func (repository *MockNarrativeRepository) Find(
 }
 
 func (repository *MockNarrativeRepository) FindByName(
+	ctx context.Context,
 	name string,
 ) (Narrative, error) {
 	repository.FindByNameCalls++
+	repository.LastContext = ctx
+	repository.LastName = name
 
 	if repository.FindByNameErr != nil {
 		return nil, repository.FindByNameErr
@@ -162,10 +254,14 @@ func (repository *MockNarrativeRepository) FindByName(
 }
 
 func (repository *MockNarrativeRepository) FindAfter(
+	ctx context.Context,
 	cursor uuid.UUID,
 	amount int,
 ) ([]Narrative, error) {
 	repository.FindAfterCalls++
+	repository.LastContext = ctx
+	repository.LastCursor = cursor
+	repository.LastAmount = amount
 
 	if repository.FindAfterErr != nil {
 		return nil, repository.FindAfterErr
@@ -200,8 +296,11 @@ func (repository *MockNarrativeRepository) FindAfter(
 	return items[start:end], nil
 }
 
-func (repository *MockNarrativeRepository) Count() (int64, error) {
+func (repository *MockNarrativeRepository) Count(
+	ctx context.Context,
+) (int64, error) {
 	repository.CountCalls++
+	repository.LastContext = ctx
 
 	if repository.CountErr != nil {
 		return 0, repository.CountErr

@@ -1,9 +1,10 @@
 package participations
 
 import (
+	"context"
+
 	"github.com/google/uuid"
 
-	"github.com/steve-rodrigue/aabs/services/saas/applications/groupings/participations/evidences"
 	domain_participations "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations"
 	domain_evidences "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/evidences"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
@@ -16,7 +17,6 @@ func New(
 	participatableRepository participatables.Repository,
 	evidenceRepository domain_evidences.Repository,
 	evidenceCalculator domain_evidences.Calculator,
-	evidenceApplication evidences.Application,
 ) Application {
 	return createApplication(
 		repository,
@@ -24,18 +24,51 @@ func New(
 		participatableRepository,
 		evidenceRepository,
 		evidenceCalculator,
-		evidenceApplication,
 	)
 }
 
 // Application represents the participation application
 type Application interface {
-	Evidences() evidences.Application
+	FindByID(
+		ctx context.Context,
+		id uuid.UUID,
+	) (domain_participations.Participation, error)
 
-	FindByID(id uuid.UUID) (domain_participations.Participation, error)
-	FindByParticipant(participant participatables.Participatable) ([]domain_participations.Participation, error)
-	FindByTarget(target participatables.Participatable) ([]domain_participations.Participation, error)
-	FindBetween(participant participatables.Participatable, target participatables.Participatable) (domain_participations.Participation, error)
+	FindByParticipant(
+		ctx context.Context,
+		participant participatables.Participatable,
+	) ([]domain_participations.Participation, error)
 
-	RebuildParticipations() error
+	FindByTarget(
+		ctx context.Context,
+		target participatables.Participatable,
+	) ([]domain_participations.Participation, error)
+
+	FindBetween(
+		ctx context.Context,
+		participant participatables.Participatable,
+		target participatables.Participatable,
+	) (domain_participations.Participation, error)
+
+	FindEvidencesByParticipation(
+		ctx context.Context,
+		participation uuid.UUID,
+	) ([]domain_evidences.Evidence, error)
+
+	FindEvidencesByPost(
+		ctx context.Context,
+		post uuid.UUID,
+	) ([]domain_evidences.Evidence, error)
+
+	FindEvidencesByParticipant(
+		ctx context.Context,
+		participant participatables.Participatable,
+	) ([]domain_evidences.Evidence, error)
+
+	FindEvidencesByTarget(
+		ctx context.Context,
+		target participatables.Participatable,
+	) ([]domain_evidences.Evidence, error)
+
+	RebuildParticipations(ctx context.Context) error
 }

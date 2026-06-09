@@ -1,6 +1,8 @@
 package evidences
 
 import (
+	"context"
+
 	"github.com/google/uuid"
 
 	domain_evidences "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/evidences"
@@ -16,9 +18,28 @@ func New(
 
 // Application represents the participation evidence application
 type Application interface {
-	FindByID(id uuid.UUID) (domain_evidences.Evidence, error)
-	FindByParticipation(participation uuid.UUID) ([]domain_evidences.Evidence, error)
-	FindByPost(post uuid.UUID) ([]domain_evidences.Evidence, error)
-	FindByParticipant(participant participatables.Participatable) ([]domain_evidences.Evidence, error)
-	FindByTarget(target participatables.Participatable) ([]domain_evidences.Evidence, error)
+	FindByID(
+		ctx context.Context,
+		id uuid.UUID,
+	) (domain_evidences.Evidence, error)
+
+	FindByParticipation(
+		ctx context.Context,
+		participation uuid.UUID,
+	) ([]domain_evidences.Evidence, error)
+
+	FindByPost(
+		ctx context.Context,
+		post uuid.UUID,
+	) ([]domain_evidences.Evidence, error)
+
+	FindByParticipant(
+		ctx context.Context,
+		participant participatables.Participatable,
+	) ([]domain_evidences.Evidence, error)
+
+	FindByTarget(
+		ctx context.Context,
+		target participatables.Participatable,
+	) ([]domain_evidences.Evidence, error)
 }
