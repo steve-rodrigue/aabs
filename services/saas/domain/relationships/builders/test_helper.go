@@ -1,8 +1,8 @@
 package builders
 
 import (
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/relatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/relatables"
 )
 
 func NewMockBuilder() *MockBuilder {

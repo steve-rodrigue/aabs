@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
 	domain_clusters "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 )
 
 // New creates a new cluster application

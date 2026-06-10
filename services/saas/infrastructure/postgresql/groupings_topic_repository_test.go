@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	domain_clusters "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 	domain_topics "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/topics"
 )
 

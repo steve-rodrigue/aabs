@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	domain_participations "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
 func TestNewGroupingsParticipationRepository(t *testing.T) {

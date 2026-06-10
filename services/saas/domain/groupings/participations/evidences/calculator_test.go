@@ -7,13 +7,13 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	domain_communities "github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
 	domain_platforms "github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	domain_users "github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
 var errTest = errors.New("test error")

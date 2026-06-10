@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/relatables"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/relatables"
 )
 
 func TestNewRelationshipRelatableRepository(t *testing.T) {

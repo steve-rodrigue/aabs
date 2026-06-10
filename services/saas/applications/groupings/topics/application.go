@@ -5,9 +5,9 @@ import (
 
 	app_participations "github.com/steve-rodrigue/aabs/services/saas/applications/groupings/participations"
 	app_posts "github.com/steve-rodrigue/aabs/services/saas/applications/posts"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 	domain_topics "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/topics"
 )
 

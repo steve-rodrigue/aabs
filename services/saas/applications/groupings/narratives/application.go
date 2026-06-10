@@ -4,10 +4,10 @@ import (
 	"github.com/google/uuid"
 
 	app_participations "github.com/steve-rodrigue/aabs/services/saas/applications/groupings/participations"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
 	domain_narratives "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/narratives"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
 type application struct {

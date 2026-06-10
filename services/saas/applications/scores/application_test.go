@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/scorables"
 	domain_scores "github.com/steve-rodrigue/aabs/services/saas/domain/scores"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/scores/scorables"
 )
 
 var errTest = errors.New("test error")

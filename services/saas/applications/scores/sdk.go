@@ -2,8 +2,8 @@ package scores
 
 import (
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/scorables"
 	domain_scores "github.com/steve-rodrigue/aabs/services/saas/domain/scores"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/scores/scorables"
 )
 
 // New creates a new scores application

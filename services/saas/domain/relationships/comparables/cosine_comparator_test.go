@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/relatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/relatables"
 )
 
 func TestNewCosineComparator(t *testing.T) {

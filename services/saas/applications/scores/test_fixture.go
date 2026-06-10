@@ -1,8 +1,8 @@
 package scores
 
 import (
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/scorables"
 	domain_scores "github.com/steve-rodrigue/aabs/services/saas/domain/scores"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/scores/scorables"
 )
 
 type applicationFixture struct {

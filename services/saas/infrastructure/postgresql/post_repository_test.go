@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	domain_communities "github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
 	domain_platforms "github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
@@ -16,7 +17,6 @@ import (
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts/contents/replies"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts/contents/threads"
 	domain_users "github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
 func TestNewPostRepository(t *testing.T) {

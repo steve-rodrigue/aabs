@@ -707,19 +707,19 @@ This process continuously updates the semantic graph as new content is ingested.
 
 ### Build and start all services
 
-bash docker compose up --build 
+docker compose up --build 
 
 ### Build and start all services in background
 
-bash docker compose up -d --build 
+docker compose up -d --build 
 
 ### View logs
 
-bash docker compose logs -f 
+docker compose logs -f 
 
 ### Stop all services
 
-bash docker compose down 
+docker compose down 
 
 ## License
 

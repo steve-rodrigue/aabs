@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/embeddings"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 )
 
 var errTest = errors.New("test error")

@@ -8,8 +8,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
 	domain_clusters "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 )
 
 type groupingsClusterRepository struct {

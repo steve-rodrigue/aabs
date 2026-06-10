@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/namers"
 )
 

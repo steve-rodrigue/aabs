@@ -8,7 +8,7 @@ import (
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
 )
 
 type groupingsClustersClusterablesComparableRepository struct {

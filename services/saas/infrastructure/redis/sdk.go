@@ -3,7 +3,7 @@ package redis
 import (
 	"github.com/redis/go-redis/v9"
 
-	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/relatables"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/relatables"
 )
 
 const (

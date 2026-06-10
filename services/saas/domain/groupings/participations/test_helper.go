@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 )
 
 func NewMockParticipation() Participation {
@@ -52,6 +52,10 @@ func NewMockParticipationRepository() *MockParticipationRepository {
 	return &MockParticipationRepository{
 		Items: map[uuid.UUID]Participation{},
 	}
+}
+
+func NewMockParticipationCounter() *MockParticipationCounter {
+	return &MockParticipationCounter{}
 }
 
 func NewMockParticipationCalculator() *MockParticipationCalculator {
@@ -319,6 +323,45 @@ func (repository *MockParticipationRepository) sortedParticipations() []Particip
 	})
 
 	return out
+}
+
+type MockParticipationCounter struct {
+	CountByParticipantAndTargetCalls int
+	CountByParticipantAndTargetErr   error
+	CountByParticipantAndTargetValue int
+	CountByTargetCalls               int
+	CountByTargetErr                 error
+	CountByTargetValue               int
+	LastContext                      context.Context
+	LastParticipant                  participatables.Participatable
+	LastTarget                       participatables.Participatable
+}
+
+func (counter *MockParticipationCounter) CountByParticipantAndTarget(
+	ctx context.Context,
+	participant participatables.Participatable,
+	target participatables.Participatable,
+) (int, error) {
+	counter.CountByParticipantAndTargetCalls++
+	counter.LastContext = ctx
+	counter.LastParticipant = participant
+	counter.LastTarget = target
+	return counter.CountByParticipantAndTargetValue,
+		counter.CountByParticipantAndTargetErr
+
+}
+
+func (counter *MockParticipationCounter) CountByTarget(
+	ctx context.Context,
+	target participatables.Participatable,
+
+) (int, error) {
+	counter.CountByTargetCalls++
+	counter.LastContext = ctx
+	counter.LastTarget = target
+	return counter.CountByTargetValue,
+		counter.CountByTargetErr
+
 }
 
 type MockParticipationCalculator struct {

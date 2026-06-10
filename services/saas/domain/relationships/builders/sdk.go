@@ -3,9 +3,9 @@ package builders
 import (
 	"errors"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/relatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/comparables"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/relatables"
 )
 
 var (

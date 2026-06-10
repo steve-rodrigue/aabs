@@ -2,9 +2,9 @@ package participations
 
 import (
 	app_evidences "github.com/steve-rodrigue/aabs/services/saas/applications/groupings/participations/evidences"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	domain_participations "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations"
 	domain_evidences "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/evidences"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
 type applicationFixture struct {

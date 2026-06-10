@@ -8,10 +8,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	domain_participations "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations"
 	domain_evidences "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/evidences"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
 type groupingsParticipationsEvidenceRepository struct {

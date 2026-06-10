@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
 	domain_clusters "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 )
 
 func TestNewGroupingsClusterRepository(t *testing.T) {

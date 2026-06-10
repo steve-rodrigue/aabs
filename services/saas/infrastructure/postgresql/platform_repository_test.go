@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	domain_platforms "github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
 func TestNewPlatformRepository(t *testing.T) {

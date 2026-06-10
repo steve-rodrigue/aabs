@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/scorables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/scores/factors"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/scores/scorables"
 )
 
 func NewMockScore(

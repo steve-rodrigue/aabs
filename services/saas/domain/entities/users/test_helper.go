@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
 func NewMockUser(

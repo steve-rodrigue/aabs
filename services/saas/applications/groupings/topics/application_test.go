@@ -6,11 +6,11 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
 	domain_participations "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 	domain_topics "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/topics"
 )
 

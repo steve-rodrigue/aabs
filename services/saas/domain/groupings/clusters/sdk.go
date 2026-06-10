@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
 )
 
 var (

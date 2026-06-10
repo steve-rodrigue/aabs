@@ -1,9 +1,9 @@
 package builders
 
 import (
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/relatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/comparables"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/relatables"
 )
 
 type builder struct {

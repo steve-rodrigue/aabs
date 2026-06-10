@@ -3,20 +3,22 @@ package postgresql
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/relatables"
 	domain_communities "github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
 	domain_platforms "github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	domain_users "github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
 	domain_campaigns "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/campaigns"
 	domain_clusters "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 	domain_narratives "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/narratives"
 	domain_assignments "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/narratives/assignments"
 	domain_participations "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations"
+	domain_dirty_participation "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/dirty"
 	domain_evidences "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/evidences"
 	domain_topics "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/topics"
 	domain_relationships "github.com/steve-rodrigue/aabs/services/saas/domain/relationships"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/relationships/relatables"
 )
 
 // NewPlatformRepository creates a new postgresql platform repository
@@ -184,5 +186,25 @@ func NewGroupingsAssignmentRepository(
 		adapter:    adapter,
 		narratives: narratives,
 		campaigns:  campaigns,
+	}
+}
+
+// NewGroupingsParticipationsDirtyRepository creates a new postgresql dirty participation repository
+func NewGroupingsParticipationsDirtyRepository(
+	pool *pgxpool.Pool,
+	adapter domain_dirty_participation.Adapter,
+) domain_dirty_participation.Repository {
+	return &groupingsParticipationsDirtyRepository{
+		pool:    pool,
+		adapter: adapter,
+	}
+}
+
+// NewConceptParticipatableCounter creates a new postgresql participatable counter
+func NewConceptParticipatableCounter(
+	pool *pgxpool.Pool,
+) participatables.Counter {
+	return &conceptParticipatableCounter{
+		pool: pool,
 	}
 }

@@ -5,11 +5,11 @@ import (
 
 	app_participations "github.com/steve-rodrigue/aabs/services/saas/applications/groupings/participations"
 	app_posts "github.com/steve-rodrigue/aabs/services/saas/applications/posts"
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
 	domain_campaigns "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/campaigns"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/participations/participatables"
 )
 
 type application struct {

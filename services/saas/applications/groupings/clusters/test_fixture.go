@@ -1,8 +1,8 @@
 package clusters
 
 import (
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
 	domain_clusters "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 )
 
 const testRebuildBatchSize = 25

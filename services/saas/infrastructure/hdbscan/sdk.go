@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/clusterables"
 	domain_campaigns "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/campaigns"
 	domain_clusters "github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/groupings/clusters/clusterables"
 )
 
 var (
