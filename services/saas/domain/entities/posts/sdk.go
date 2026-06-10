@@ -6,8 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
+
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts/contents"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
 )
@@ -38,6 +37,13 @@ type PostInput struct {
 	CreatedOn    time.Time
 }
 
+// Criteria represents filters used to search posts
+type Criteria struct {
+	UserIDs      []uuid.UUID
+	CommunityIDs []uuid.UUID
+	PlatformIDs  []uuid.UUID
+}
+
 // Adapter represents a post adapter
 type Adapter interface {
 	ToDomain(input PostInput) (Post, error)
@@ -60,9 +66,25 @@ type Repository interface {
 
 	Find(ctx context.Context, index int, amount int) ([]Post, error)
 	FindAfter(ctx context.Context, cursor uuid.UUID, amount int) ([]Post, error)
+
+	FindByCriteria(
+		ctx context.Context,
+		criteria Criteria,
+		index int,
+		amount int,
+	) ([]Post, error)
+
+	FindByCriteriaAfter(
+		ctx context.Context,
+		criteria Criteria,
+		cursor uuid.UUID,
+		amount int,
+	) ([]Post, error)
+
 	Count(ctx context.Context) (int64, error)
 
-	FindByUser(ctx context.Context, user users.User) ([]Post, error)
-	FindByCommunity(ctx context.Context, community communities.Community) ([]Post, error)
-	FindByPlatform(ctx context.Context, platform platforms.Platform) ([]Post, error)
+	CountByCriteria(
+		ctx context.Context,
+		criteria Criteria,
+	) (int64, error)
 }

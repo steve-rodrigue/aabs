@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/steve-rodrigue/aabs/services/saas/domain/concepts/participatables"
-	domain_communities "github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
 	domain_platforms "github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts/contents"
@@ -353,7 +352,7 @@ func TestPostRepositoryCount(t *testing.T) {
 	}
 }
 
-func TestPostRepositoryFindByUser(t *testing.T) {
+func TestPostRepositoryFindByCriteriaWithUserIDs(t *testing.T) {
 	fixture := newPostRepositoryFixture(t)
 
 	user := newTestRepositoryUser()
@@ -362,28 +361,19 @@ func TestPostRepositoryFindByUser(t *testing.T) {
 	fixture.users.Items[user.Identifier()] = user
 	fixture.users.Items[otherUser.Identifier()] = otherUser
 
-	first := newTestThreadPost(
-		t,
-		mustParseUUID("00000000-0000-0000-0000-000000000001"),
-		user,
-		nil,
-		"First",
-		"First text",
-	)
-
-	second := newTestThreadPost(
-		t,
-		mustParseUUID("00000000-0000-0000-0000-000000000002"),
-		otherUser,
-		nil,
-		"Second",
-		"Second text",
-	)
+	first := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000001"), user, nil, "First", "First text")
+	second := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000002"), otherUser, nil, "Second", "Second text")
 
 	savePosts(t, fixture, first, second)
 
-	result, err := fixture.repository.FindByUser(fixture.ctx, user)
-
+	result, err := fixture.repository.FindByCriteria(
+		fixture.ctx,
+		domain_posts.Criteria{
+			UserIDs: []uuid.UUID{user.Identifier()},
+		},
+		0,
+		10,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -395,40 +385,28 @@ func TestPostRepositoryFindByUser(t *testing.T) {
 	assertPost(t, result[0], first)
 }
 
-func TestPostRepositoryFindByCommunity(t *testing.T) {
+func TestPostRepositoryFindByCriteriaWithCommunityIDs(t *testing.T) {
 	fixture := newPostRepositoryFixture(t)
 
 	creator := newTestRepositoryUser()
 	fixture.users.Items[creator.Identifier()] = creator
 
-	community := domain_communities.NewMockCommunity("Community", "Text")
+	communityID := uuid.New()
 	otherCommunityID := uuid.New()
 
-	first := newTestThreadPost(
-		t,
-		mustParseUUID("00000000-0000-0000-0000-000000000001"),
-		creator,
-		[]uuid.UUID{community.Identifier()},
-		"First",
-		"First text",
-	)
-
-	second := newTestThreadPost(
-		t,
-		mustParseUUID("00000000-0000-0000-0000-000000000002"),
-		creator,
-		[]uuid.UUID{otherCommunityID},
-		"Second",
-		"Second text",
-	)
+	first := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000001"), creator, []uuid.UUID{communityID}, "First", "First text")
+	second := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000002"), creator, []uuid.UUID{otherCommunityID}, "Second", "Second text")
 
 	savePosts(t, fixture, first, second)
 
-	result, err := fixture.repository.FindByCommunity(
+	result, err := fixture.repository.FindByCriteria(
 		fixture.ctx,
-		community,
+		domain_posts.Criteria{
+			CommunityIDs: []uuid.UUID{communityID},
+		},
+		0,
+		10,
 	)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -440,7 +418,7 @@ func TestPostRepositoryFindByCommunity(t *testing.T) {
 	assertPost(t, result[0], first)
 }
 
-func TestPostRepositoryFindByPlatform(t *testing.T) {
+func TestPostRepositoryFindByCriteriaWithPlatformIDs(t *testing.T) {
 	fixture := newPostRepositoryFixture(t)
 
 	platform := domain_platforms.NewMockPlatform("Reddit", "reddit")
@@ -452,31 +430,22 @@ func TestPostRepositoryFindByPlatform(t *testing.T) {
 	fixture.users.Items[user.Identifier()] = user
 	fixture.users.Items[otherUser.Identifier()] = otherUser
 
-	first := newTestThreadPost(
-		t,
-		mustParseUUID("00000000-0000-0000-0000-000000000001"),
-		user,
-		nil,
-		"First",
-		"First text",
-	)
+	insertTestRepositoryUser(t, fixture, user)
+	insertTestRepositoryUser(t, fixture, otherUser)
 
-	second := newTestThreadPost(
-		t,
-		mustParseUUID("00000000-0000-0000-0000-000000000002"),
-		otherUser,
-		nil,
-		"Second",
-		"Second text",
-	)
+	first := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000001"), user, nil, "First", "First text")
+	second := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000002"), otherUser, nil, "Second", "Second text")
 
 	savePosts(t, fixture, first, second)
 
-	result, err := fixture.repository.FindByPlatform(
+	result, err := fixture.repository.FindByCriteria(
 		fixture.ctx,
-		platform,
+		domain_posts.Criteria{
+			PlatformIDs: []uuid.UUID{platform.Identifier()},
+		},
+		0,
+		10,
 	)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -486,6 +455,107 @@ func TestPostRepositoryFindByPlatform(t *testing.T) {
 	}
 
 	assertPost(t, result[0], first)
+}
+
+func TestPostRepositoryFindByCriteriaWithMultipleIDs(t *testing.T) {
+	fixture := newPostRepositoryFixture(t)
+
+	user := newTestRepositoryUser()
+	fixture.users.Items[user.Identifier()] = user
+
+	firstCommunityID := uuid.New()
+	secondCommunityID := uuid.New()
+	otherCommunityID := uuid.New()
+
+	first := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000001"), user, []uuid.UUID{firstCommunityID}, "First", "First text")
+	second := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000002"), user, []uuid.UUID{secondCommunityID}, "Second", "Second text")
+	third := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000003"), user, []uuid.UUID{otherCommunityID}, "Third", "Third text")
+
+	savePosts(t, fixture, first, second, third)
+
+	result, err := fixture.repository.FindByCriteria(
+		fixture.ctx,
+		domain_posts.Criteria{
+			CommunityIDs: []uuid.UUID{
+				firstCommunityID,
+				secondCommunityID,
+			},
+		},
+		0,
+		10,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(result) != 2 {
+		t.Fatalf("expected 2 posts, got %d", len(result))
+	}
+
+	assertPost(t, result[0], first)
+	assertPost(t, result[1], second)
+}
+
+func TestPostRepositoryFindByCriteriaAfter(t *testing.T) {
+	fixture := newPostRepositoryFixture(t)
+
+	user := newTestRepositoryUser()
+	fixture.users.Items[user.Identifier()] = user
+
+	first := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000001"), user, nil, "First", "First text")
+	second := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000002"), user, nil, "Second", "Second text")
+	third := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000003"), user, nil, "Third", "Third text")
+
+	savePosts(t, fixture, first, second, third)
+
+	result, err := fixture.repository.FindByCriteriaAfter(
+		fixture.ctx,
+		domain_posts.Criteria{
+			UserIDs: []uuid.UUID{user.Identifier()},
+		},
+		first.Identifier(),
+		2,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(result) != 2 {
+		t.Fatalf("expected 2 posts, got %d", len(result))
+	}
+
+	assertPost(t, result[0], second)
+	assertPost(t, result[1], third)
+}
+
+func TestPostRepositoryCountByCriteria(t *testing.T) {
+	fixture := newPostRepositoryFixture(t)
+
+	user := newTestRepositoryUser()
+	otherUser := newTestRepositoryUser()
+
+	fixture.users.Items[user.Identifier()] = user
+	fixture.users.Items[otherUser.Identifier()] = otherUser
+
+	first := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000001"), user, nil, "First", "First text")
+	second := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000002"), user, nil, "Second", "Second text")
+	third := newTestThreadPost(t, mustParseUUID("00000000-0000-0000-0000-000000000003"), otherUser, nil, "Third", "Third text")
+
+	savePosts(t, fixture, first, second, third)
+
+	count, err := fixture.repository.CountByCriteria(
+		fixture.ctx,
+		domain_posts.Criteria{
+			UserIDs: []uuid.UUID{user.Identifier()},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if count != 2 {
+		t.Fatalf("expected count 2, got %d", count)
+	}
 }
 
 type postRepositoryFixture struct {
@@ -625,6 +695,40 @@ func savePosts(
 		if err := fixture.repository.Save(fixture.ctx, post); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+func insertTestRepositoryUser(
+	t *testing.T,
+	fixture *postRepositoryFixture,
+	user domain_users.User,
+) {
+	t.Helper()
+
+	var platformID *uuid.UUID
+
+	if user.Platform() != nil {
+		id := user.Platform().Identifier()
+		platformID = &id
+	}
+
+	_, err := fixture.pool.Exec(
+		fixture.ctx,
+		`
+		INSERT INTO users (
+			identifier,
+			platform_id
+		)
+		VALUES ($1, $2)
+		ON CONFLICT (identifier)
+		DO UPDATE SET
+			platform_id = EXCLUDED.platform_id
+		`,
+		user.Identifier(),
+		platformID,
+	)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

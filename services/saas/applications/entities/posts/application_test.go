@@ -7,8 +7,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
 )
@@ -236,133 +234,45 @@ func TestCountReturnsError(t *testing.T) {
 	}
 }
 
-func TestFindByUser(t *testing.T) {
+func TestFindByCriteria(t *testing.T) {
 	fixture := newApplicationFixture()
 	ctx := context.Background()
 
 	user := users.NewMockUser("@user", "User")
 	post := domain_posts.NewMockPostWithUser("hello", user)
 
-	fixture.repository.Items[post.Identifier()] = post
-
-	result, err := fixture.application.FindByUser(ctx, user)
-
-	if err != nil {
-		t.Fatal(err)
+	criteria := domain_posts.Criteria{
+		UserIDs: []uuid.UUID{user.Identifier()},
 	}
 
-	if fixture.repository.FindByUserCalls != 1 {
-		t.Fatalf("expected 1 find by user call")
-	}
-
-	if fixture.repository.LastContext != ctx {
-		t.Fatalf("expected context to be passed")
-	}
-
-	if fixture.repository.LastUser != user {
-		t.Fatalf("expected user to be passed")
-	}
-
-	if len(result) != 1 || result[0] != post {
-		t.Fatalf("expected post result")
-	}
-}
-
-func TestFindByUserReturnsError(t *testing.T) {
-	fixture := newApplicationFixture()
-	ctx := context.Background()
-
-	fixture.repository.FindByUserErr = errTest
-
-	_, err := fixture.application.FindByUser(
-		ctx,
-		users.NewMockUser("@user", "User"),
-	)
-
-	if !errors.Is(err, errTest) {
-		t.Fatalf("expected find by user error, got %v", err)
-	}
-}
-
-func TestFindByCommunity(t *testing.T) {
-	fixture := newApplicationFixture()
-	ctx := context.Background()
-
-	community := communities.NewMockCommunity("Community", "Text")
-	post := domain_posts.NewMockPostWithCommunities(
-		"hello",
-		[]uuid.UUID{community.Identifier()},
-	)
-
-	fixture.repository.Items[post.Identifier()] = post
-
-	result, err := fixture.application.FindByCommunity(ctx, community)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if fixture.repository.FindByCommunityCalls != 1 {
-		t.Fatalf("expected 1 find by community call")
-	}
-
-	if fixture.repository.LastContext != ctx {
-		t.Fatalf("expected context to be passed")
-	}
-
-	if fixture.repository.LastCommunity != community {
-		t.Fatalf("expected community to be passed")
-	}
-
-	if len(result) != 1 || result[0] != post {
-		t.Fatalf("expected post result")
-	}
-}
-
-func TestFindByCommunityReturnsError(t *testing.T) {
-	fixture := newApplicationFixture()
-	ctx := context.Background()
-
-	fixture.repository.FindByCommunityErr = errTest
-
-	_, err := fixture.application.FindByCommunity(
-		ctx,
-		communities.NewMockCommunity("Community", "Text"),
-	)
-
-	if !errors.Is(err, errTest) {
-		t.Fatalf("expected find by community error, got %v", err)
-	}
-}
-
-func TestFindByPlatform(t *testing.T) {
-	fixture := newApplicationFixture()
-	ctx := context.Background()
-
-	platform := platforms.NewMockPlatform("Platform", "platform")
-	user := users.NewMockUser("@user", "User")
-	post := domain_posts.NewMockPostWithUser("hello", user)
-
-	fixture.repository.FindByPlatformValue = []domain_posts.Post{
+	fixture.repository.FindByCriteriaValue = []domain_posts.Post{
 		post,
 	}
 
-	result, err := fixture.application.FindByPlatform(ctx, platform)
+	result, err := fixture.application.FindByCriteria(ctx, criteria, 0, 25)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if fixture.repository.FindByPlatformCalls != 1 {
-		t.Fatalf("expected 1 find by platform call")
+	if fixture.repository.FindByCriteriaCalls != 1 {
+		t.Fatalf("expected 1 find by criteria call")
 	}
 
 	if fixture.repository.LastContext != ctx {
 		t.Fatalf("expected context to be passed")
 	}
 
-	if fixture.repository.LastPlatform != platform {
-		t.Fatalf("expected platform to be passed")
+	if fixture.repository.LastCriteria.UserIDs[0] != user.Identifier() {
+		t.Fatalf("expected criteria to be passed")
+	}
+
+	if fixture.repository.LastIndex != 0 {
+		t.Fatalf("expected index 0")
+	}
+
+	if fixture.repository.LastAmount != 25 {
+		t.Fatalf("expected amount 25")
 	}
 
 	if len(result) != 1 || result[0] != post {
@@ -370,18 +280,150 @@ func TestFindByPlatform(t *testing.T) {
 	}
 }
 
-func TestFindByPlatformReturnsError(t *testing.T) {
+func TestFindByCriteriaReturnsError(t *testing.T) {
 	fixture := newApplicationFixture()
 	ctx := context.Background()
 
-	fixture.repository.FindByPlatformErr = errTest
+	fixture.repository.FindByCriteriaErr = errTest
 
-	_, err := fixture.application.FindByPlatform(
+	_, err := fixture.application.FindByCriteria(
 		ctx,
-		platforms.NewMockPlatform("Platform", "platform"),
+		domain_posts.Criteria{
+			UserIDs: []uuid.UUID{uuid.New()},
+		},
+		0,
+		25,
 	)
 
 	if !errors.Is(err, errTest) {
-		t.Fatalf("expected find by platform error, got %v", err)
+		t.Fatalf("expected find by criteria error, got %v", err)
+	}
+}
+
+func TestFindByCriteriaAfter(t *testing.T) {
+	fixture := newApplicationFixture()
+	ctx := context.Background()
+
+	cursor := uuid.New()
+	communityID := uuid.New()
+	post := domain_posts.NewMockPostWithCommunities(
+		"hello",
+		[]uuid.UUID{communityID},
+	)
+
+	criteria := domain_posts.Criteria{
+		CommunityIDs: []uuid.UUID{communityID},
+	}
+
+	fixture.repository.FindByCriteriaAfterValue = []domain_posts.Post{
+		post,
+	}
+
+	result, err := fixture.application.FindByCriteriaAfter(
+		ctx,
+		criteria,
+		cursor,
+		25,
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if fixture.repository.FindByCriteriaAfterCalls != 1 {
+		t.Fatalf("expected 1 find by criteria after call")
+	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
+	if fixture.repository.LastCriteria.CommunityIDs[0] != communityID {
+		t.Fatalf("expected criteria to be passed")
+	}
+
+	if fixture.repository.LastCursor != cursor {
+		t.Fatalf("expected cursor to be passed")
+	}
+
+	if fixture.repository.LastAmount != 25 {
+		t.Fatalf("expected amount 25")
+	}
+
+	if len(result) != 1 || result[0] != post {
+		t.Fatalf("expected post result")
+	}
+}
+
+func TestFindByCriteriaAfterReturnsError(t *testing.T) {
+	fixture := newApplicationFixture()
+	ctx := context.Background()
+
+	fixture.repository.FindByCriteriaAfterErr = errTest
+
+	_, err := fixture.application.FindByCriteriaAfter(
+		ctx,
+		domain_posts.Criteria{
+			PlatformIDs: []uuid.UUID{uuid.New()},
+		},
+		uuid.New(),
+		25,
+	)
+
+	if !errors.Is(err, errTest) {
+		t.Fatalf("expected find by criteria after error, got %v", err)
+	}
+}
+
+func TestCountByCriteria(t *testing.T) {
+	fixture := newApplicationFixture()
+	ctx := context.Background()
+
+	platformID := uuid.New()
+
+	criteria := domain_posts.Criteria{
+		PlatformIDs: []uuid.UUID{platformID},
+	}
+
+	fixture.repository.CountByCriteriaValue = 123
+
+	result, err := fixture.application.CountByCriteria(ctx, criteria)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if fixture.repository.CountByCriteriaCalls != 1 {
+		t.Fatalf("expected 1 count by criteria call")
+	}
+
+	if fixture.repository.LastContext != ctx {
+		t.Fatalf("expected context to be passed")
+	}
+
+	if fixture.repository.LastCriteria.PlatformIDs[0] != platformID {
+		t.Fatalf("expected criteria to be passed")
+	}
+
+	if result != 123 {
+		t.Fatalf("expected count 123, got %d", result)
+	}
+}
+
+func TestCountByCriteriaReturnsError(t *testing.T) {
+	fixture := newApplicationFixture()
+	ctx := context.Background()
+
+	fixture.repository.CountByCriteriaErr = errTest
+
+	_, err := fixture.application.CountByCriteria(
+		ctx,
+		domain_posts.Criteria{
+			UserIDs: []uuid.UUID{uuid.New()},
+		},
+	)
+
+	if !errors.Is(err, errTest) {
+		t.Fatalf("expected count by criteria error, got %v", err)
 	}
 }

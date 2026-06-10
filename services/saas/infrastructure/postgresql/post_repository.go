@@ -3,13 +3,12 @@ package postgresql
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	domain_communities "github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
-	domain_platforms "github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts/contents"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts/contents/replies"
@@ -220,70 +219,16 @@ func (repository *postRepository) Count(
 	return count, nil
 }
 
-func (repository *postRepository) FindByUser(
+func (repository *postRepository) FindByCriteria(
 	ctx context.Context,
-	user domain_users.User,
+	criteria domain_posts.Criteria,
+	index int,
+	amount int,
 ) ([]domain_posts.Post, error) {
-	rows, err := repository.pool.Query(
-		ctx,
-		`
-		SELECT
-			identifier,
-			creator_id,
-			content_id,
-			created_on
-		FROM posts
-		WHERE creator_id = $1
-		ORDER BY identifier
-		`,
-		user.Identifier(),
-	)
-	if err != nil {
-		return nil, err
-	}
+	where, args := repository.buildCriteriaWhere(criteria)
 
-	defer rows.Close()
-
-	return repository.scanMany(ctx, rows)
-}
-
-func (repository *postRepository) FindByCommunity(
-	ctx context.Context,
-	community domain_communities.Community,
-) ([]domain_posts.Post, error) {
-	rows, err := repository.pool.Query(
-		ctx,
-		`
-		SELECT
-			posts.identifier,
-			posts.creator_id,
-			posts.content_id,
-			posts.created_on
-		FROM posts
-		INNER JOIN post_communities
-			ON post_communities.post_id = posts.identifier
-		WHERE post_communities.community_id = $1
-		ORDER BY posts.identifier
-		`,
-		community.Identifier(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	return repository.scanMany(ctx, rows)
-}
-
-func (repository *postRepository) FindByPlatform(
-	ctx context.Context,
-	platform domain_platforms.Platform,
-) ([]domain_posts.Post, error) {
-	rows, err := repository.pool.Query(
-		ctx,
-		`
-		SELECT
+	query := `
+		SELECT DISTINCT
 			posts.identifier,
 			posts.creator_id,
 			posts.content_id,
@@ -291,11 +236,16 @@ func (repository *postRepository) FindByPlatform(
 		FROM posts
 		INNER JOIN users
 			ON users.identifier = posts.creator_id
-		WHERE users.platform_id = $1
+		LEFT JOIN post_communities
+			ON post_communities.post_id = posts.identifier
+	` + where + `
 		ORDER BY posts.identifier
-		`,
-		platform.Identifier(),
-	)
+		OFFSET $` + fmt.Sprint(len(args)+1) + `
+		LIMIT $` + fmt.Sprint(len(args)+2)
+
+	args = append(args, index, amount)
+
+	rows, err := repository.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -303,6 +253,75 @@ func (repository *postRepository) FindByPlatform(
 	defer rows.Close()
 
 	return repository.scanMany(ctx, rows)
+}
+
+func (repository *postRepository) FindByCriteriaAfter(
+	ctx context.Context,
+	criteria domain_posts.Criteria,
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_posts.Post, error) {
+	where, args := repository.buildCriteriaWhere(criteria)
+
+	if cursor != uuid.Nil {
+		where = repository.appendWhere(
+			where,
+			fmt.Sprintf("posts.identifier > $%d", len(args)+1),
+		)
+
+		args = append(args, cursor)
+	}
+
+	query := `
+		SELECT DISTINCT
+			posts.identifier,
+			posts.creator_id,
+			posts.content_id,
+			posts.created_on
+		FROM posts
+		INNER JOIN users
+			ON users.identifier = posts.creator_id
+		LEFT JOIN post_communities
+			ON post_communities.post_id = posts.identifier
+	` + where + `
+		ORDER BY posts.identifier
+		LIMIT $` + fmt.Sprint(len(args)+1)
+
+	args = append(args, amount)
+
+	rows, err := repository.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	return repository.scanMany(ctx, rows)
+}
+
+func (repository *postRepository) CountByCriteria(
+	ctx context.Context,
+	criteria domain_posts.Criteria,
+) (int64, error) {
+	where, args := repository.buildCriteriaWhere(criteria)
+
+	query := `
+		SELECT COUNT(DISTINCT posts.identifier)
+		FROM posts
+		INNER JOIN users
+			ON users.identifier = posts.creator_id
+		LEFT JOIN post_communities
+			ON post_communities.post_id = posts.identifier
+	` + where
+
+	var count int64
+
+	err := repository.pool.QueryRow(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func (repository *postRepository) findOne(
@@ -785,4 +804,51 @@ func (repository *postRepository) contentKind(
 	}
 
 	return "reply"
+}
+
+func (repository *postRepository) buildCriteriaWhere(
+	criteria domain_posts.Criteria,
+) (string, []any) {
+	where := ""
+	args := []any{}
+
+	if len(criteria.UserIDs) > 0 {
+		args = append(args, criteria.UserIDs)
+
+		where = repository.appendWhere(
+			where,
+			fmt.Sprintf("posts.creator_id = ANY($%d)", len(args)),
+		)
+	}
+
+	if len(criteria.CommunityIDs) > 0 {
+		args = append(args, criteria.CommunityIDs)
+
+		where = repository.appendWhere(
+			where,
+			fmt.Sprintf("post_communities.community_id = ANY($%d)", len(args)),
+		)
+	}
+
+	if len(criteria.PlatformIDs) > 0 {
+		args = append(args, criteria.PlatformIDs)
+
+		where = repository.appendWhere(
+			where,
+			fmt.Sprintf("users.platform_id = ANY($%d)", len(args)),
+		)
+	}
+
+	return where, args
+}
+
+func (repository *postRepository) appendWhere(
+	current string,
+	condition string,
+) string {
+	if current == "" {
+		return "WHERE " + condition
+	}
+
+	return current + "\nAND " + condition
 }

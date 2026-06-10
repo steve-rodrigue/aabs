@@ -5,10 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
 )
 
 type application struct {
@@ -53,29 +50,33 @@ func (app *application) FindAfter(
 	return app.repository.FindAfter(ctx, cursor, amount)
 }
 
+func (app *application) FindByCriteria(
+	ctx context.Context,
+	criteria domain_posts.Criteria,
+	index int,
+	amount int,
+) ([]domain_posts.Post, error) {
+	return app.repository.FindByCriteria(ctx, criteria, index, amount)
+}
+
+func (app *application) FindByCriteriaAfter(
+	ctx context.Context,
+	criteria domain_posts.Criteria,
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_posts.Post, error) {
+	return app.repository.FindByCriteriaAfter(ctx, criteria, cursor, amount)
+}
+
 func (app *application) Count(
 	ctx context.Context,
 ) (int64, error) {
 	return app.repository.Count(ctx)
 }
 
-func (app *application) FindByUser(
+func (app *application) CountByCriteria(
 	ctx context.Context,
-	user users.User,
-) ([]domain_posts.Post, error) {
-	return app.repository.FindByUser(ctx, user)
-}
-
-func (app *application) FindByCommunity(
-	ctx context.Context,
-	community communities.Community,
-) ([]domain_posts.Post, error) {
-	return app.repository.FindByCommunity(ctx, community)
-}
-
-func (app *application) FindByPlatform(
-	ctx context.Context,
-	platform platforms.Platform,
-) ([]domain_posts.Post, error) {
-	return app.repository.FindByPlatform(ctx, platform)
+	criteria domain_posts.Criteria,
+) (int64, error) {
+	return app.repository.CountByCriteria(ctx, criteria)
 }

@@ -5,10 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
 	domain_posts "github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
 )
 
 func NewMockPostsApplication() *MockPostsApplication {
@@ -32,30 +29,28 @@ type MockPostsApplication struct {
 	FindAfterErr   error
 	FindAfterValue []domain_posts.Post
 
+	FindByCriteriaCalls int
+	FindByCriteriaErr   error
+	FindByCriteriaValue []domain_posts.Post
+
+	FindByCriteriaAfterCalls int
+	FindByCriteriaAfterErr   error
+	FindByCriteriaAfterValue []domain_posts.Post
+
 	CountCalls int
 	CountErr   error
 	CountValue int64
 
-	FindByUserCalls int
-	FindByUserErr   error
-	FindByUserValue []domain_posts.Post
+	CountByCriteriaCalls int
+	CountByCriteriaErr   error
+	CountByCriteriaValue int64
 
-	FindByCommunityCalls int
-	FindByCommunityErr   error
-	FindByCommunityValue []domain_posts.Post
-
-	FindByPlatformCalls int
-	FindByPlatformErr   error
-	FindByPlatformValue []domain_posts.Post
-
-	LastContext   context.Context
-	LastID        uuid.UUID
-	LastIndex     int
-	LastAmount    int
-	LastCursor    uuid.UUID
-	LastUser      users.User
-	LastCommunity communities.Community
-	LastPlatform  platforms.Platform
+	LastContext  context.Context
+	LastID       uuid.UUID
+	LastIndex    int
+	LastAmount   int
+	LastCursor   uuid.UUID
+	LastCriteria domain_posts.Criteria
 }
 
 func (application *MockPostsApplication) Save(
@@ -118,47 +113,66 @@ func (application *MockPostsApplication) FindAfter(
 	return []domain_posts.Post{}, nil
 }
 
+func (application *MockPostsApplication) FindByCriteria(
+	ctx context.Context,
+	criteria domain_posts.Criteria,
+	index int,
+	amount int,
+) ([]domain_posts.Post, error) {
+	application.FindByCriteriaCalls++
+	application.LastContext = ctx
+	application.LastCriteria = criteria
+	application.LastIndex = index
+	application.LastAmount = amount
+
+	return application.FindByCriteriaValue,
+		application.FindByCriteriaErr
+}
+
+func (application *MockPostsApplication) FindByCriteriaAfter(
+	ctx context.Context,
+	criteria domain_posts.Criteria,
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_posts.Post, error) {
+	application.FindByCriteriaAfterCalls++
+	application.LastContext = ctx
+	application.LastCriteria = criteria
+	application.LastCursor = cursor
+	application.LastAmount = amount
+
+	if application.FindByCriteriaAfterErr != nil {
+		return nil, application.FindByCriteriaAfterErr
+	}
+
+	if application.FindByCriteriaAfterValue != nil {
+		if application.FindByCriteriaAfterCalls == 1 {
+			return application.FindByCriteriaAfterValue, nil
+		}
+
+		return []domain_posts.Post{}, nil
+	}
+
+	return []domain_posts.Post{}, nil
+}
+
 func (application *MockPostsApplication) Count(
 	ctx context.Context,
-) (
-	int64,
-	error,
-) {
+) (int64, error) {
 	application.CountCalls++
 	application.LastContext = ctx
 
 	return application.CountValue, application.CountErr
 }
 
-func (application *MockPostsApplication) FindByUser(
+func (application *MockPostsApplication) CountByCriteria(
 	ctx context.Context,
-	user users.User,
-) ([]domain_posts.Post, error) {
-	application.FindByUserCalls++
+	criteria domain_posts.Criteria,
+) (int64, error) {
+	application.CountByCriteriaCalls++
 	application.LastContext = ctx
-	application.LastUser = user
+	application.LastCriteria = criteria
 
-	return application.FindByUserValue, application.FindByUserErr
-}
-
-func (application *MockPostsApplication) FindByCommunity(
-	ctx context.Context,
-	community communities.Community,
-) ([]domain_posts.Post, error) {
-	application.FindByCommunityCalls++
-	application.LastContext = ctx
-	application.LastCommunity = community
-
-	return application.FindByCommunityValue, application.FindByCommunityErr
-}
-
-func (application *MockPostsApplication) FindByPlatform(
-	ctx context.Context,
-	platform platforms.Platform,
-) ([]domain_posts.Post, error) {
-	application.FindByPlatformCalls++
-	application.LastContext = ctx
-	application.LastPlatform = platform
-
-	return application.FindByPlatformValue, application.FindByPlatformErr
+	return application.CountByCriteriaValue,
+		application.CountByCriteriaErr
 }

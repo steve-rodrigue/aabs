@@ -702,37 +702,44 @@ func TestParticipantPostsForUser(t *testing.T) {
 		"Steve",
 	)
 
+	post := domain_posts.NewMockPost("hello")
+
 	postRepository := domain_posts.NewMockPostRepository()
-	postRepository.FindByUserValue = []domain_posts.Post{
-		domain_posts.NewMockPost("hello"),
+	postRepository.FindByCriteriaValue = []domain_posts.Post{
+		post,
 	}
 
 	calculator := &calculator{
 		posts: postRepository,
 	}
 
-	result, err := calculator.participantPosts(
-		ctx,
-		user,
-	)
-
+	result, err := calculator.participantPosts(ctx, user)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if postRepository.FindByUserCalls != 1 {
-		t.Fatalf("expected 1 find by user call")
+	if postRepository.FindByCriteriaCalls != 1 {
+		t.Fatalf("expected 1 find by criteria call")
 	}
 
 	if postRepository.LastContext != ctx {
 		t.Fatalf("expected context")
 	}
 
-	if postRepository.LastUser != user {
-		t.Fatalf("expected user")
+	if len(postRepository.LastCriteria.UserIDs) != 1 ||
+		postRepository.LastCriteria.UserIDs[0] != user.Identifier() {
+		t.Fatalf("expected user criteria")
 	}
 
-	if len(result) != 1 {
+	if postRepository.LastIndex != 0 {
+		t.Fatalf("expected index 0")
+	}
+
+	if postRepository.LastAmount != 1000 {
+		t.Fatalf("expected amount 1000")
+	}
+
+	if len(result) != 1 || result[0] != post {
 		t.Fatalf("expected 1 post")
 	}
 }
@@ -745,33 +752,32 @@ func TestParticipantPostsForCommunity(t *testing.T) {
 		"community text",
 	)
 
+	post := domain_posts.NewMockPost("hello")
+
 	postRepository := domain_posts.NewMockPostRepository()
-	postRepository.FindByCommunityValue = []domain_posts.Post{
-		domain_posts.NewMockPost("hello"),
+	postRepository.FindByCriteriaValue = []domain_posts.Post{
+		post,
 	}
 
 	calculator := &calculator{
 		posts: postRepository,
 	}
 
-	result, err := calculator.participantPosts(
-		ctx,
-		community,
-	)
-
+	result, err := calculator.participantPosts(ctx, community)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if postRepository.FindByCommunityCalls != 1 {
-		t.Fatalf("expected 1 find by community call")
+	if postRepository.FindByCriteriaCalls != 1 {
+		t.Fatalf("expected 1 find by criteria call")
 	}
 
-	if postRepository.LastCommunity != community {
-		t.Fatalf("expected community")
+	if len(postRepository.LastCriteria.CommunityIDs) != 1 ||
+		postRepository.LastCriteria.CommunityIDs[0] != community.Identifier() {
+		t.Fatalf("expected community criteria")
 	}
 
-	if len(result) != 1 {
+	if len(result) != 1 || result[0] != post {
 		t.Fatalf("expected 1 post")
 	}
 }
@@ -784,33 +790,32 @@ func TestParticipantPostsForPlatform(t *testing.T) {
 		"reddit",
 	)
 
+	post := domain_posts.NewMockPost("hello")
+
 	postRepository := domain_posts.NewMockPostRepository()
-	postRepository.FindByPlatformValue = []domain_posts.Post{
-		domain_posts.NewMockPost("hello"),
+	postRepository.FindByCriteriaValue = []domain_posts.Post{
+		post,
 	}
 
 	calculator := &calculator{
 		posts: postRepository,
 	}
 
-	result, err := calculator.participantPosts(
-		ctx,
-		platform,
-	)
-
+	result, err := calculator.participantPosts(ctx, platform)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if postRepository.FindByPlatformCalls != 1 {
-		t.Fatalf("expected 1 find by platform call")
+	if postRepository.FindByCriteriaCalls != 1 {
+		t.Fatalf("expected 1 find by criteria call")
 	}
 
-	if postRepository.LastPlatform != platform {
-		t.Fatalf("expected platform")
+	if len(postRepository.LastCriteria.PlatformIDs) != 1 ||
+		postRepository.LastCriteria.PlatformIDs[0] != platform.Identifier() {
+		t.Fatalf("expected platform criteria")
 	}
 
-	if len(result) != 1 {
+	if len(result) != 1 || result[0] != post {
 		t.Fatalf("expected 1 post")
 	}
 }

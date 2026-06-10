@@ -6,18 +6,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/communities"
-	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/platforms"
+
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/posts/contents"
 	"github.com/steve-rodrigue/aabs/services/saas/domain/entities/users"
 )
 
 func NewMockPost(text string) Post {
 	return &MockPost{
-		id: uuid.New(),
-		content: &contents.MockContent{
+		ID: uuid.New(),
+		ContentValue: &contents.MockContent{
 			TextValue: text,
 		},
+		CreatedOnValue: time.Now().UTC(),
 	}
 }
 
@@ -26,11 +26,12 @@ func NewMockPostWithUser(
 	creator users.User,
 ) Post {
 	return &MockPost{
-		id:      uuid.New(),
-		creator: creator,
-		content: &contents.MockContent{
+		ID:           uuid.New(),
+		CreatorValue: creator,
+		ContentValue: &contents.MockContent{
 			TextValue: text,
 		},
+		CreatedOnValue: time.Now().UTC(),
 	}
 }
 
@@ -42,48 +43,55 @@ func NewMockPostWithCommunities(
 	copy(ids, communityIDs)
 
 	return &MockPost{
-		id:           uuid.New(),
-		communityIDs: ids,
-		content: &contents.MockContent{
+		ID:                uuid.New(),
+		CommunityIDsValue: ids,
+		ContentValue: &contents.MockContent{
 			TextValue: text,
 		},
+		CreatedOnValue: time.Now().UTC(),
 	}
 }
 
-type MockPost struct {
-	id uuid.UUID
+func NewMockPostRepository() *MockPostRepository {
+	return &MockPostRepository{
+		Items: map[uuid.UUID]Post{},
+	}
+}
 
-	communityIDs []uuid.UUID
-	creator      users.User
-	content      contents.Content
-	createdOn    time.Time
+func NewMockPostAdapter() *MockPostAdapter {
+	return &MockPostAdapter{}
+}
+
+type MockPost struct {
+	ID uuid.UUID
+
+	CommunityIDsValue []uuid.UUID
+	CreatorValue      users.User
+	ContentValue      contents.Content
+	CreatedOnValue    time.Time
 }
 
 func (post *MockPost) Identifier() uuid.UUID {
-	return post.id
+	return post.ID
 }
 
 func (post *MockPost) CommunityIDs() []uuid.UUID {
-	out := make([]uuid.UUID, len(post.communityIDs))
-	copy(out, post.communityIDs)
+	out := make([]uuid.UUID, len(post.CommunityIDsValue))
+	copy(out, post.CommunityIDsValue)
 
 	return out
 }
 
 func (post *MockPost) Creator() users.User {
-	return post.creator
+	return post.CreatorValue
 }
 
 func (post *MockPost) Content() contents.Content {
-	return post.content
+	return post.ContentValue
 }
 
 func (post *MockPost) CreatedOn() time.Time {
-	return post.createdOn
-}
-
-func NewMockPostAdapter() *MockPostAdapter {
-	return &MockPostAdapter{}
+	return post.CreatedOnValue
 }
 
 type MockPostAdapter struct {
@@ -112,20 +120,14 @@ func (adapter *MockPostAdapter) ToDomain(
 	copy(communityIDs, input.CommunityIDs)
 
 	return &MockPost{
-		id:           input.Identifier,
-		communityIDs: communityIDs,
-		creator:      input.Creator,
-		content: &contents.MockContent{
+		ID:                input.Identifier,
+		CommunityIDsValue: communityIDs,
+		CreatorValue:      input.Creator,
+		ContentValue: &contents.MockContent{
 			TextValue: input.Content.Thread.Text,
 		},
-		createdOn: input.CreatedOn,
+		CreatedOnValue: input.CreatedOn,
 	}, nil
-}
-
-func NewMockPostRepository() *MockPostRepository {
-	return &MockPostRepository{
-		Items: map[uuid.UUID]Post{},
-	}
 }
 
 type MockPostRepository struct {
@@ -136,6 +138,7 @@ type MockPostRepository struct {
 
 	FindByIDCalls int
 	FindByIDErr   error
+	FindByIDValue Post
 
 	FindCalls int
 	FindErr   error
@@ -145,31 +148,29 @@ type MockPostRepository struct {
 	FindAfterErr   error
 	FindAfterValue []Post
 
+	FindByCriteriaCalls int
+	FindByCriteriaErr   error
+	FindByCriteriaValue []Post
+
+	FindByCriteriaAfterCalls int
+	FindByCriteriaAfterErr   error
+	FindByCriteriaAfterValue []Post
+
 	CountCalls int
 	CountErr   error
 	CountValue int64
 
-	FindByUserCalls int
-	FindByUserErr   error
-	FindByUserValue []Post
+	CountByCriteriaCalls int
+	CountByCriteriaErr   error
+	CountByCriteriaValue int64
 
-	FindByCommunityCalls int
-	FindByCommunityErr   error
-	FindByCommunityValue []Post
-
-	FindByPlatformCalls int
-	FindByPlatformErr   error
-	FindByPlatformValue []Post
-
-	LastContext   context.Context
-	LastSaved     Post
-	LastID        uuid.UUID
-	LastIndex     int
-	LastAmount    int
-	LastCursor    uuid.UUID
-	LastUser      users.User
-	LastCommunity communities.Community
-	LastPlatform  platforms.Platform
+	LastContext  context.Context
+	LastSaved    Post
+	LastID       uuid.UUID
+	LastIndex    int
+	LastAmount   int
+	LastCursor   uuid.UUID
+	LastCriteria Criteria
 }
 
 func (repository *MockPostRepository) Save(
@@ -179,6 +180,10 @@ func (repository *MockPostRepository) Save(
 	repository.SaveCalls++
 	repository.LastContext = ctx
 	repository.LastSaved = post
+
+	if repository.Items != nil && post != nil {
+		repository.Items[post.Identifier()] = post
+	}
 
 	return repository.SaveErr
 }
@@ -193,6 +198,10 @@ func (repository *MockPostRepository) FindByID(
 
 	if repository.FindByIDErr != nil {
 		return nil, repository.FindByIDErr
+	}
+
+	if repository.FindByIDValue != nil {
+		return repository.FindByIDValue, nil
 	}
 
 	if repository.Items == nil {
@@ -220,18 +229,11 @@ func (repository *MockPostRepository) Find(
 		return repository.FindValue, nil
 	}
 
-	items := repository.sortedPosts()
-
-	if index >= len(items) {
-		return []Post{}, nil
-	}
-
-	end := index + amount
-	if end > len(items) {
-		end = len(items)
-	}
-
-	return items[index:end], nil
+	return paginatePosts(
+		repository.sortedPosts(),
+		index,
+		amount,
+	), nil
 }
 
 func (repository *MockPostRepository) FindAfter(
@@ -256,29 +258,69 @@ func (repository *MockPostRepository) FindAfter(
 		return []Post{}, nil
 	}
 
-	items := repository.sortedPosts()
+	return paginatePostsAfter(
+		repository.sortedPosts(),
+		cursor,
+		amount,
+	), nil
+}
 
-	start := 0
+func (repository *MockPostRepository) FindByCriteria(
+	ctx context.Context,
+	criteria Criteria,
+	index int,
+	amount int,
+) ([]Post, error) {
+	repository.FindByCriteriaCalls++
+	repository.LastContext = ctx
+	repository.LastCriteria = criteria
+	repository.LastIndex = index
+	repository.LastAmount = amount
 
-	if cursor != uuid.Nil {
-		for index, post := range items {
-			if post.Identifier() == cursor {
-				start = index + 1
-				break
-			}
-		}
+	if repository.FindByCriteriaErr != nil {
+		return nil, repository.FindByCriteriaErr
 	}
 
-	if start >= len(items) {
+	if repository.FindByCriteriaValue != nil {
+		return repository.FindByCriteriaValue, nil
+	}
+
+	return paginatePosts(
+		repository.filterByCriteria(criteria),
+		index,
+		amount,
+	), nil
+}
+
+func (repository *MockPostRepository) FindByCriteriaAfter(
+	ctx context.Context,
+	criteria Criteria,
+	cursor uuid.UUID,
+	amount int,
+) ([]Post, error) {
+	repository.FindByCriteriaAfterCalls++
+	repository.LastContext = ctx
+	repository.LastCriteria = criteria
+	repository.LastCursor = cursor
+	repository.LastAmount = amount
+
+	if repository.FindByCriteriaAfterErr != nil {
+		return nil, repository.FindByCriteriaAfterErr
+	}
+
+	if repository.FindByCriteriaAfterValue != nil {
+		if repository.FindByCriteriaAfterCalls == 1 {
+			return repository.FindByCriteriaAfterValue, nil
+		}
+
 		return []Post{}, nil
 	}
 
-	end := start + amount
-	if end > len(items) {
-		end = len(items)
-	}
-
-	return items[start:end], nil
+	return paginatePostsAfter(
+		repository.filterByCriteria(criteria),
+		cursor,
+		amount,
+	), nil
 }
 
 func (repository *MockPostRepository) Count(
@@ -298,96 +340,125 @@ func (repository *MockPostRepository) Count(
 	return int64(len(repository.Items)), nil
 }
 
-func (repository *MockPostRepository) FindByUser(
+func (repository *MockPostRepository) CountByCriteria(
 	ctx context.Context,
-	user users.User,
-) ([]Post, error) {
-	repository.FindByUserCalls++
+	criteria Criteria,
+) (int64, error) {
+	repository.CountByCriteriaCalls++
 	repository.LastContext = ctx
-	repository.LastUser = user
+	repository.LastCriteria = criteria
 
-	if repository.FindByUserErr != nil {
-		return nil, repository.FindByUserErr
+	if repository.CountByCriteriaErr != nil {
+		return 0, repository.CountByCriteriaErr
 	}
 
-	if repository.FindByUserValue != nil {
-		return repository.FindByUserValue, nil
+	if repository.CountByCriteriaValue != 0 {
+		return repository.CountByCriteriaValue, nil
 	}
 
+	return int64(len(repository.filterByCriteria(criteria))), nil
+}
+
+func (repository *MockPostRepository) filterByCriteria(
+	criteria Criteria,
+) []Post {
 	out := []Post{}
 
-	for _, post := range repository.Items {
-		if post.Creator() == nil {
+	for _, post := range repository.sortedPosts() {
+		if !postMatchesCriteria(post, criteria) {
 			continue
 		}
 
-		if post.Creator().Identifier() == user.Identifier() {
-			out = append(out, post)
+		out = append(out, post)
+	}
+
+	return out
+}
+
+func postMatchesCriteria(
+	post Post,
+	criteria Criteria,
+) bool {
+	if len(criteria.UserIDs) > 0 {
+		if post.Creator() == nil ||
+			!uuidIn(criteria.UserIDs, post.Creator().Identifier()) {
+			return false
 		}
 	}
 
-	return out, nil
+	if len(criteria.PlatformIDs) > 0 {
+		if post.Creator() == nil ||
+			post.Creator().Platform() == nil ||
+			!uuidIn(criteria.PlatformIDs, post.Creator().Platform().Identifier()) {
+			return false
+		}
+	}
+
+	if len(criteria.CommunityIDs) > 0 {
+		matched := false
+
+		for _, communityID := range post.CommunityIDs() {
+			if uuidIn(criteria.CommunityIDs, communityID) {
+				matched = true
+				break
+			}
+		}
+
+		if !matched {
+			return false
+		}
+	}
+
+	return true
 }
 
-func (repository *MockPostRepository) FindByCommunity(
-	ctx context.Context,
-	community communities.Community,
-) ([]Post, error) {
-	repository.FindByCommunityCalls++
-	repository.LastContext = ctx
-	repository.LastCommunity = community
-
-	if repository.FindByCommunityErr != nil {
-		return nil, repository.FindByCommunityErr
+func paginatePosts(
+	items []Post,
+	index int,
+	amount int,
+) []Post {
+	if index >= len(items) {
+		return []Post{}
 	}
 
-	if repository.FindByCommunityValue != nil {
-		return repository.FindByCommunityValue, nil
+	end := index + amount
+	if end > len(items) {
+		end = len(items)
 	}
 
-	out := []Post{}
+	return items[index:end]
+}
 
-	for _, post := range repository.Items {
-		for _, communityID := range post.CommunityIDs() {
-			if communityID == community.Identifier() {
-				out = append(out, post)
+func paginatePostsAfter(
+	items []Post,
+	cursor uuid.UUID,
+	amount int,
+) []Post {
+	start := 0
+
+	if cursor != uuid.Nil {
+		for index, post := range items {
+			if post.Identifier() == cursor {
+				start = index + 1
 				break
 			}
 		}
 	}
 
-	return out, nil
+	return paginatePosts(items, start, amount)
 }
 
-func (repository *MockPostRepository) FindByPlatform(
-	ctx context.Context,
-	platform platforms.Platform,
-) ([]Post, error) {
-	repository.FindByPlatformCalls++
-	repository.LastContext = ctx
-	repository.LastPlatform = platform
-
-	if repository.FindByPlatformErr != nil {
-		return nil, repository.FindByPlatformErr
-	}
-
-	if repository.FindByPlatformValue != nil {
-		return repository.FindByPlatformValue, nil
-	}
-
-	out := []Post{}
-
-	for _, post := range repository.Items {
-		if post.Creator() == nil || post.Creator().Platform() == nil {
-			continue
-		}
-
-		if post.Creator().Platform().Identifier() == platform.Identifier() {
-			out = append(out, post)
+func uuidIn(
+	ids []uuid.UUID,
+	id uuid.UUID,
+) bool {
+	for _, current := range ids {
+		if current == id {
+			return true
 		}
 	}
 
-	return out, nil
+	return false
 }
 
 func (repository *MockPostRepository) sortedPosts() []Post {
