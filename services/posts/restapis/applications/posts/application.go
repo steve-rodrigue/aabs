@@ -1,0 +1,85 @@
+package posts
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+
+	domain_posts "github.com/steve-rodrigue/aabs/services/posts/restapis/domain/posts"
+)
+
+type application struct {
+	repository domain_posts.Repository
+	service    domain_posts.Service
+}
+
+func createApplication(
+	repository domain_posts.Repository,
+	service domain_posts.Service,
+) Application {
+	return &application{
+		repository: repository,
+		service:    service,
+	}
+}
+
+func (app *application) Save(
+	ctx context.Context,
+	post domain_posts.Post,
+) error {
+	return app.service.Save(ctx, post)
+}
+
+func (app *application) FindByID(
+	ctx context.Context,
+	id uuid.UUID,
+) (domain_posts.Post, error) {
+	return app.repository.FindByID(ctx, id)
+}
+
+func (app *application) Find(
+	ctx context.Context,
+	index int,
+	amount int,
+) ([]domain_posts.Post, error) {
+	return app.repository.Find(ctx, index, amount)
+}
+
+func (app *application) FindAfter(
+	ctx context.Context,
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_posts.Post, error) {
+	return app.repository.FindAfter(ctx, cursor, amount)
+}
+
+func (app *application) FindByCriteria(
+	ctx context.Context,
+	criteria domain_posts.Criteria,
+	index int,
+	amount int,
+) ([]domain_posts.Post, error) {
+	return app.repository.FindByCriteria(ctx, criteria, index, amount)
+}
+
+func (app *application) FindByCriteriaAfter(
+	ctx context.Context,
+	criteria domain_posts.Criteria,
+	cursor uuid.UUID,
+	amount int,
+) ([]domain_posts.Post, error) {
+	return app.repository.FindByCriteriaAfter(ctx, criteria, cursor, amount)
+}
+
+func (app *application) Count(
+	ctx context.Context,
+) (int64, error) {
+	return app.repository.Count(ctx)
+}
+
+func (app *application) CountByCriteria(
+	ctx context.Context,
+	criteria domain_posts.Criteria,
+) (int64, error) {
+	return app.repository.CountByCriteria(ctx, criteria)
+}
